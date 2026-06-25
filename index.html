@@ -394,7 +394,25 @@
     color: var(--text);
   }
 
-  /* Export CSV button area */
+  .stats-tab-btn {
+    flex: 1;
+    padding: 8px 4px;
+    border-radius: 7px;
+    border: none;
+    background: none;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all .15s;
+  }
+  .stats-tab-btn.active {
+    background: var(--accent);
+    color: #FFF;
+  }
+
+  /* ── Export CSV button area ── */
   .export-area {
     display: flex;
     gap: 8px;
@@ -441,22 +459,65 @@
 
 <!-- ── 統計頁 ── -->
 <div class="page" id="page-stats">
-  <div class="card">
-    <div class="card-title">篩選</div>
-    <div class="field-row">
-      <div>
-        <label class="field-label">月份</label>
-        <select id="stats-month" onchange="renderStats()">
-          <option value="">全部</option>
-          <option value="7">7月</option>
-          <option value="8">8月</option>
-        </select>
+
+  <!-- 子分頁切換 -->
+  <div style="display:flex;gap:6px;margin-bottom:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px">
+    <button class="stats-tab-btn active" id="stab-daily"    onclick="switchStatsTab('daily')">📋 每日訂單</button>
+    <button class="stats-tab-btn"        id="stab-items"    onclick="switchStatsTab('items')">🍱 品項統計</button>
+    <button class="stats-tab-btn"        id="stab-billing"  onclick="switchStatsTab('billing')">💰 月份帳單</button>
+  </div>
+
+  <!-- ── 每日訂單篩選 ── -->
+  <div id="filter-daily">
+    <div class="card" style="margin-bottom:10px">
+      <div class="field-row" style="align-items:flex-end">
+        <div>
+          <label class="field-label">選擇日期</label>
+          <input type="date" id="filter-date" min="2026-07-01" max="2026-08-31" style="margin-bottom:0" onchange="renderStats()">
+        </div>
+        <div>
+          <label class="field-label">學生</label>
+          <select id="stats-student" style="margin-bottom:0" onchange="renderStats()">
+            <option value="">全部</option>
+          </select>
+        </div>
       </div>
-      <div>
-        <label class="field-label">學生</label>
-        <select id="stats-student" onchange="renderStats()">
-          <option value="">全部</option>
-        </select>
+    </div>
+  </div>
+
+  <!-- ── 品項統計篩選 ── -->
+  <div id="filter-items" style="display:none">
+    <div class="card" style="margin-bottom:10px">
+      <div class="field-row" style="align-items:flex-end">
+        <div>
+          <label class="field-label">起始日期</label>
+          <input type="date" id="filter-from" min="2026-07-01" max="2026-08-31" style="margin-bottom:0" onchange="renderStats()">
+        </div>
+        <div>
+          <label class="field-label">結束日期</label>
+          <input type="date" id="filter-to" min="2026-07-01" max="2026-08-31" style="margin-bottom:0" onchange="renderStats()">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 月份帳單篩選 ── -->
+  <div id="filter-billing" style="display:none">
+    <div class="card" style="margin-bottom:10px">
+      <div class="field-row" style="align-items:flex-end">
+        <div>
+          <label class="field-label">月份</label>
+          <select id="billing-month" style="margin-bottom:0" onchange="renderStats()">
+            <option value="7">7月</option>
+            <option value="8">8月</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">學生</label>
+          <select id="billing-student" style="margin-bottom:0" onchange="renderStats()">
+            <option value="">全部</option>
+          </select>
+        </div>
       </div>
     </div>
   </div>
@@ -641,7 +702,7 @@ function switchTab(tab) {
   document.getElementById('page-' + tab).classList.add('active');
   document.querySelector(`nav button[onclick="switchTab('${tab}')"]`).classList.add('active');
   if (tab === 'order') renderDateGrid();
-  if (tab === 'stats') renderStats();
+  if (tab === 'stats') { currentStatsTab = 'daily'; switchStatsTab('daily'); }
   if (tab === 'admin') renderAdminPage();
 }
 
@@ -791,134 +852,294 @@ function clearOrder() {
 // ════════════════════════════════════════
 //  STATS PAGE
 // ════════════════════════════════════════
+let currentStatsTab = 'daily';
+
+function switchStatsTab(tab) {
+  currentStatsTab = tab;
+  ['daily','items','billing'].forEach(t => {
+    document.getElementById('stab-' + t).classList.toggle('active', t === tab);
+    document.getElementById('filter-' + t).style.display = t === tab ? '' : 'none';
+  });
+  renderStats();
+}
+
 async function renderStats() {
   const data = await getData();
-  const monthFilter = document.getElementById('stats-month').value;
-  const studentFilter = document.getElementById('stats-student').value;
+  const weekDays = ['日','一','二','三','四','五','六'];
 
-  // Populate student select
-  const sel = document.getElementById('stats-student');
-  const current = sel.value;
-  sel.innerHTML = '<option value="">全部</option>';
-  data.students.forEach(s => {
-    const opt = document.createElement('option');
-    opt.value = s; opt.textContent = s;
-    if (s === current) opt.selected = true;
-    sel.appendChild(opt);
-  });
-
-  // Build summary
-  // Aggregate by student per date
-  const rows = []; // { student, date, items, total }
-  const itemTotals = {}; // { itemName: totalQty }
-  const studentTotals = {}; // { student: total }
-
-  Object.entries(data.orders).forEach(([date, dayOrders]) => {
-    const [y, m] = date.split('-');
-    if (monthFilter && parseInt(m) !== parseInt(monthFilter)) return;
-    Object.entries(dayOrders).forEach(([student, items]) => {
-      if (studentFilter && student !== studentFilter) return;
-      const total = items.reduce((s, i) => s + i.price * i.qty, 0);
-      rows.push({ student, date, items, total });
-      items.forEach(i => {
-        itemTotals[i.name] = (itemTotals[i.name] || 0) + i.qty;
-        studentTotals[student] = (studentTotals[student] || 0) + total;
-      });
+  // 更新學生下拉（每日 & 帳單 tab 各自）
+  ['stats-student','billing-student'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">全部</option>';
+    data.students.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s; o.textContent = s;
+      if (s === cur) o.selected = true;
+      sel.appendChild(o);
     });
   });
-
-  rows.sort((a, b) => a.date.localeCompare(b.date));
 
   const container = document.getElementById('stats-content');
   container.innerHTML = '';
 
-  // Summary numbers
-  const totalAmount = rows.reduce((s, r) => s + r.total, 0);
-  const totalOrders = rows.length;
-  const summaryDiv = document.createElement('div');
-  summaryDiv.innerHTML = `
-    <div style="display:flex;gap:10px;margin-bottom:14px">
-      <div class="summary-bar" style="flex:1"><span class="label">總筆數</span><span class="value">${totalOrders}</span></div>
-      <div class="summary-bar" style="flex:1"><span class="label">總金額</span><span class="value">NT$${totalAmount}</span></div>
-    </div>`;
-  container.appendChild(summaryDiv);
+  // ── Tab 1：每日訂單（單日篩選）──
+  if (currentStatsTab === 'daily') {
+    const dateFilter    = document.getElementById('filter-date').value;
+    const studentFilter = document.getElementById('stats-student').value;
 
-  if (rows.length === 0) {
-    container.innerHTML += '<div class="empty"><div class="icon">📭</div>尚無訂單資料</div>';
-    return;
-  }
+    // 取得所有有訂單的日期，供提示用
+    const allDates = Object.keys(data.orders).sort();
 
-  // Per-item quantity summary
-  if (Object.keys(itemTotals).length) {
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = `<div class="card-title">品項訂購量統計</div>`;
+    if (!dateFilter) {
+      container.innerHTML = `<div class="empty"><div class="icon">📅</div>請選擇日期查看當日訂單</div>`;
+      // 顯示有資料的日期快捷
+      if (allDates.length) {
+        const hints = document.createElement('div');
+        hints.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:8px';
+        allDates.forEach(d => {
+          const [,m,day] = d.split('-');
+          const btn = document.createElement('button');
+          btn.className = 'date-btn';
+          btn.textContent = `${parseInt(m)}/${parseInt(day)}`;
+          btn.onclick = () => { document.getElementById('filter-date').value = d; renderStats(); };
+          hints.appendChild(btn);
+        });
+        container.appendChild(hints);
+      }
+      return;
+    }
+
+    const dayOrders = data.orders[dateFilter] || {};
+    const dateObj = new Date(dateFilter + 'T00:00:00');
+    const [,m,d] = dateFilter.split('-');
+    const label = `${parseInt(m)}月${parseInt(d)}日（週${weekDays[dateObj.getDay()]}）`;
+
+    // 過濾學生
+    const filtered = Object.entries(dayOrders)
+      .filter(([s]) => !studentFilter || s === studentFilter);
+
+    if (filtered.length === 0) {
+      container.innerHTML = `<div class="empty"><div class="icon">📭</div>${label} 無訂單資料</div>`;
+      return;
+    }
+
+    // 日期大標
+    const heading = document.createElement('div');
+    heading.innerHTML = `<div style="font-weight:900;font-size:1.05rem;color:var(--accent);margin-bottom:10px">${label}</div>`;
+    container.appendChild(heading);
+
+    // 品項訂購總數（給商家用）
+    const itemTotals = {};
+    let dayTotal = 0;
+    filtered.forEach(([, items]) => items.forEach(i => {
+      itemTotals[i.name] = (itemTotals[i.name] || 0) + i.qty;
+      dayTotal += i.price * i.qty;
+    }));
+
+    const itemCard = document.createElement('div');
+    itemCard.className = 'card';
+    itemCard.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="card-title" style="margin:0">📦 品項訂購總數量</div>
+        <span class="badge badge-green">當日合計 NT$${dayTotal}</span>
+      </div>`;
+    const tblItem = document.createElement('table');
+    tblItem.className = 'stats-table';
+    tblItem.innerHTML = `<thead><tr><th>品項名稱</th><th style="text-align:center">訂購數量</th></tr></thead>`;
+    const tbodyItem = document.createElement('tbody');
+    Object.entries(itemTotals).forEach(([name, qty]) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${name}</td><td style="text-align:center"><span class="badge badge-orange" style="font-size:0.95rem">${qty} 份</span></td>`;
+      tbodyItem.appendChild(tr);
+    });
+    tblItem.appendChild(tbodyItem);
+    itemCard.appendChild(tblItem);
+    container.appendChild(itemCard);
+
+    // 學生明細
+    const detailCard = document.createElement('div');
+    detailCard.className = 'card';
+    detailCard.innerHTML = `<div class="card-title">👦 學生訂單明細</div>`;
     const tbl = document.createElement('table');
     tbl.className = 'stats-table';
-    tbl.innerHTML = `<thead><tr><th>品項</th><th>數量</th></tr></thead>`;
+    tbl.innerHTML = `<thead><tr><th>學生</th><th>品項</th><th>金額</th></tr></thead>`;
     const tbody = document.createElement('tbody');
-    Object.entries(itemTotals).sort((a,b)=>b[1]-a[1]).forEach(([name, qty]) => {
+    filtered.forEach(([student, items]) => {
+      const total = items.reduce((s,i) => s + i.price*i.qty, 0);
+      const itemStr = items.map(i=>`${i.name}×${i.qty}`).join('、');
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${name}</td><td><span class="badge badge-orange">${qty} 份</span></td>`;
+      tr.innerHTML = `<td style="white-space:nowrap">${student}</td><td style="font-size:0.8rem">${itemStr}</td><td style="white-space:nowrap">NT$${total}</td>`;
       tbody.appendChild(tr);
     });
     tbl.appendChild(tbody);
-    card.appendChild(tbl);
-    container.appendChild(card);
+    detailCard.appendChild(tbl);
+    container.appendChild(detailCard);
   }
 
-  // Per-student summary
-  if (Object.keys(studentTotals).length) {
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = `<div class="card-title">學生消費統計</div>`;
-    const tbl = document.createElement('table');
-    tbl.className = 'stats-table';
-    tbl.innerHTML = `<thead><tr><th>學生</th><th>金額</th></tr></thead>`;
-    const tbody = document.createElement('tbody');
-    Object.entries(studentTotals).sort((a,b)=>b[1]-a[1]).forEach(([name, total]) => {
+  // ── Tab 2：品項統計（日期區間）──
+  else if (currentStatsTab === 'items') {
+    const from = document.getElementById('filter-from').value;
+    const to   = document.getElementById('filter-to').value;
+
+    const itemByDay = {}; // { date: { itemName: qty } }
+    const itemGrand = {}; // { itemName: totalQty }
+
+    Object.entries(data.orders)
+      .sort(([a],[b]) => a.localeCompare(b))
+      .forEach(([date, dayOrders]) => {
+        if (from && date < from) return;
+        if (to   && date > to)   return;
+        Object.values(dayOrders).forEach(items => {
+          items.forEach(i => {
+            if (!itemByDay[date]) itemByDay[date] = {};
+            itemByDay[date][i.name] = (itemByDay[date][i.name] || 0) + i.qty;
+            itemGrand[i.name] = (itemGrand[i.name] || 0) + i.qty;
+          });
+        });
+      });
+
+    if (Object.keys(itemGrand).length === 0) {
+      container.innerHTML = `<div class="empty"><div class="icon">📭</div>此區間無資料</div>`;
+      return;
+    }
+
+    // 總計卡
+    const grandCard = document.createElement('div');
+    grandCard.className = 'card';
+    grandCard.innerHTML = `<div class="card-title">📊 區間品項總計${from||to ? `（${from||'起'}～${to||'迄'}）` : '（全部）'}</div>`;
+    const tG = document.createElement('table');
+    tG.className = 'stats-table';
+    tG.innerHTML = `<thead><tr><th>品項名稱</th><th style="text-align:center">總數量</th></tr></thead>`;
+    const tbG = document.createElement('tbody');
+    Object.entries(itemGrand).sort((a,b)=>b[1]-a[1]).forEach(([name,qty]) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${name}</td><td><span class="badge badge-green">NT$${total}</span></td>`;
-      tbody.appendChild(tr);
+      tr.innerHTML = `<td>${name}</td><td style="text-align:center"><span class="badge badge-orange" style="font-size:0.95rem">${qty} 份</span></td>`;
+      tbG.appendChild(tr);
     });
-    tbl.appendChild(tbody);
-    card.appendChild(tbl);
-    container.appendChild(card);
+    tG.appendChild(tbG);
+    grandCard.appendChild(tG);
+    container.appendChild(grandCard);
+
+    // 每日細項
+    Object.entries(itemByDay).forEach(([date, items]) => {
+      const [,m,d] = date.split('-');
+      const dObj = new Date(date+'T00:00:00');
+      const label = `${parseInt(m)}/${parseInt(d)}（週${weekDays[dObj.getDay()]}）`;
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `<div style="font-weight:900;font-size:0.95rem;color:var(--accent);margin-bottom:8px">${label}</div>`;
+      const flex = document.createElement('div');
+      flex.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px';
+      Object.entries(items).forEach(([name,qty]) => {
+        const tag = document.createElement('span');
+        tag.className = 'badge badge-orange';
+        tag.style.fontSize = '0.88rem';
+        tag.textContent = `${name} × ${qty}`;
+        flex.appendChild(tag);
+      });
+      card.appendChild(flex);
+      container.appendChild(card);
+    });
   }
 
-  // Detail table
-  const card2 = document.createElement('div');
-  card2.className = 'card';
-  card2.innerHTML = `<div class="card-title">訂單明細</div>`;
-  const tbl2 = document.createElement('table');
-  tbl2.className = 'stats-table';
-  tbl2.innerHTML = `<thead><tr><th>日期</th><th>學生</th><th>品項</th><th>金額</th></tr></thead>`;
-  const tbody2 = document.createElement('tbody');
-  rows.forEach(r => {
-    const [y, m, d] = r.date.split('-');
-    const dateStr = `${parseInt(m)}/${parseInt(d)}`;
-    const itemStr = r.items.map(i => `${i.name}×${i.qty}`).join('、');
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${dateStr}</td><td>${r.student}</td><td style="font-size:0.82rem">${itemStr}</td><td>NT$${r.total}</td>`;
-    tbody2.appendChild(tr);
-  });
-  tbl2.appendChild(tbody2);
-  card2.appendChild(tbl2);
-  container.appendChild(card2);
+  // ── Tab 3：月份帳單（per student）──
+  else if (currentStatsTab === 'billing') {
+    const month   = document.getElementById('billing-month').value;
+    const student = document.getElementById('billing-student').value;
+
+    // studentBill: { name: { total, days: [{date,items,subtotal}] } }
+    const studentBill = {};
+
+    Object.entries(data.orders)
+      .sort(([a],[b]) => a.localeCompare(b))
+      .forEach(([date, dayOrders]) => {
+        const [,m] = date.split('-');
+        if (month && parseInt(m) !== parseInt(month)) return;
+        Object.entries(dayOrders).forEach(([s, items]) => {
+          if (student && s !== student) return;
+          if (!studentBill[s]) studentBill[s] = { total: 0, days: [] };
+          const subtotal = items.reduce((acc,i) => acc + i.price*i.qty, 0);
+          studentBill[s].total += subtotal;
+          studentBill[s].days.push({ date, items, subtotal });
+        });
+      });
+
+    if (Object.keys(studentBill).length === 0) {
+      container.innerHTML = `<div class="empty"><div class="icon">📭</div>此月份無資料</div>`;
+      return;
+    }
+
+    // 月份總計列
+    const grandTotal = Object.values(studentBill).reduce((s,b)=>s+b.total,0);
+    const sumDiv = document.createElement('div');
+    sumDiv.innerHTML = `
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        <div class="summary-bar" style="flex:1"><span class="label">${month}月 應收總額</span><span class="value">NT$${grandTotal}</span></div>
+      </div>`;
+    container.appendChild(sumDiv);
+
+    // 每位學生一張卡
+    Object.entries(studentBill)
+      .sort((a,b) => b[1].total - a[1].total)
+      .forEach(([name, bill]) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div style="font-weight:900;font-size:1rem">${name}</div>
+            <span class="badge badge-green" style="font-size:0.95rem">NT$${bill.total}</span>
+          </div>`;
+        const tbl = document.createElement('table');
+        tbl.className = 'stats-table';
+        tbl.innerHTML = `<thead><tr><th>日期</th><th>品項</th><th>小計</th></tr></thead>`;
+        const tbody = document.createElement('tbody');
+        bill.days.forEach(day => {
+          const [,m,d] = day.date.split('-');
+          const dObj = new Date(day.date+'T00:00:00');
+          const dateStr = `${parseInt(m)}/${parseInt(d)}（${weekDays[dObj.getDay()]}）`;
+          const itemStr = day.items.map(i=>`${i.name}×${i.qty}`).join('、');
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td style="white-space:nowrap;font-size:0.82rem">${dateStr}</td><td style="font-size:0.8rem">${itemStr}</td><td style="white-space:nowrap">NT$${day.subtotal}</td>`;
+          tbody.appendChild(tr);
+        });
+        // 合計列
+        const trTotal = document.createElement('tr');
+        trTotal.innerHTML = `<td colspan="2" style="font-weight:700;text-align:right">合計</td><td style="font-weight:900;color:var(--accent)">NT$${bill.total}</td>`;
+        tbody.appendChild(trTotal);
+        tbl.appendChild(tbody);
+        card.appendChild(tbl);
+        container.appendChild(card);
+      });
+  }
 }
 
 async function exportCSV() {
   const data = await getData();
-  const rows = [['日期','學生','品項','數量','單價','小計']];
-  Object.entries(data.orders).forEach(([date, dayOrders]) => {
-    Object.entries(dayOrders).forEach(([student, items]) => {
-      items.forEach(item => {
-        rows.push([date, student, item.name, item.qty, item.price, item.price * item.qty]);
+  const rows = [['日期','星期','學生','品項','數量','單價','小計']];
+  const weekDays = ['日','一','二','三','四','五','六'];
+  Object.entries(data.orders)
+    .sort(([a],[b]) => a.localeCompare(b))
+    .forEach(([date, dayOrders]) => {
+      const dateObj = new Date(date + 'T00:00:00');
+      const weekDay = weekDays[dateObj.getDay()];
+      Object.entries(dayOrders).forEach(([student, items]) => {
+        items.forEach(item => {
+          rows.push([date, weekDay, student, item.name, item.qty, item.price, item.price * item.qty]);
+        });
       });
     });
-  });
-  const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
-  downloadFile('bento_orders.csv', csv, 'text/csv;charset=utf-8;');
+  // UTF-8 BOM 讓 Excel 正確顯示中文
+  const BOM = '\uFEFF';
+  const csv = BOM + rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'bento_orders.csv';
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 async function exportJSON() {
