@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026暑假便當訂購</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+
+  :root {
+    --bg: #FDF8F0;
+    --surface: #FFFFFF;
+    --surface2: #FFF5E6;
+    --border: #E8D5B7;
+    --accent: #D4680A;
+    --accent-light: #F5B87A;
+    --accent-pale: #FEF0DC;
+    --text: #2C1A0E;
+    --text-muted: #8B6A4A;
+    --green: #2E7D52;
+    --green-pale: #E8F5EE;
+    --red: #C0392B;
+    --red-pale: #FDECEA;
+    --shadow: 0 2px 12px rgba(44,26,14,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--accent);
+    color: #FFF;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  }
+  header h1 {
+    font-size: 1.25rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  header h1 span { font-size: 1.4rem; }
+  .mode-badge {
+    font-size: 0.72rem;
+    background: rgba(255,255,255,0.22);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-weight: 500;
+  }
+
+  /* ── Nav tabs ── */
+  nav {
+    display: flex;
+    background: var(--surface);
+    border-bottom: 2px solid var(--border);
+    overflow-x: auto;
+  }
+  nav button {
+    flex: 1;
+    min-width: 80px;
+    padding: 12px 6px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    font-family: inherit;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all .15s;
+    white-space: nowrap;
+  }
+  nav button.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* ── Page containers ── */
+  .page { display: none; padding: 16px; max-width: 680px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+  }
+
+  /* ── Date selector ── */
+  .date-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .date-btn {
+    padding: 8px 14px;
+    border-radius: 20px;
+    border: 2px solid var(--border);
+    background: var(--surface);
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all .15s;
+  }
+  .date-btn:hover { border-color: var(--accent-light); color: var(--accent); }
+  .date-btn.active { background: var(--accent); border-color: var(--accent); color: #FFF; }
+
+  /* ── Student selector ── */
+  .student-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+  }
+  .student-btn {
+    padding: 10px 8px;
+    border-radius: 10px;
+    border: 2px solid var(--border);
+    background: var(--surface);
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .15s;
+    text-align: center;
+  }
+  .student-btn:hover { border-color: var(--accent-light); }
+  .student-btn.active { background: var(--accent-pale); border-color: var(--accent); color: var(--accent); }
+  .student-btn.ordered { position: relative; }
+  .student-btn.ordered::after {
+    content: '✓';
+    position: absolute;
+    top: 3px; right: 5px;
+    font-size: 0.7rem;
+    color: var(--green);
+  }
+
+  /* ── Menu items ── */
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .menu-item:last-child { border-bottom: none; }
+  .menu-item-info { flex: 1; }
+  .menu-item-name { font-weight: 700; font-size: 0.95rem; }
+  .menu-item-price { font-size: 0.82rem; color: var(--accent); font-weight: 500; margin-top: 2px; }
+  .qty-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .qty-btn {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--surface);
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+    font-family: inherit;
+  }
+  .qty-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .qty-num {
+    min-width: 24px;
+    text-align: center;
+    font-weight: 900;
+    font-size: 1.05rem;
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 13px;
+    border-radius: 10px;
+    border: none;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .btn-primary { background: var(--accent); color: #FFF; }
+  .btn-primary:hover { background: #B8560A; }
+  .btn-secondary { background: var(--surface2); color: var(--accent); border: 2px solid var(--accent-light); }
+  .btn-danger { background: var(--red-pale); color: var(--red); border: 2px solid #EDADA8; }
+  .btn-success { background: var(--green-pale); color: var(--green); border: 2px solid #A8D5BB; }
+  .btn + .btn { margin-top: 8px; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ── Admin menu editor ── */
+  .menu-edit-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: center;
+  }
+  .menu-edit-row input {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    background: var(--surface);
+  }
+  .menu-edit-row input:focus { outline: none; border-color: var(--accent); }
+  .menu-edit-row input.price { width: 80px; flex: none; }
+  .del-btn {
+    width: 30px; height: 30px;
+    border-radius: 6px;
+    border: none;
+    background: var(--red-pale);
+    color: var(--red);
+    font-size: 1rem;
+    cursor: pointer;
+    font-family: inherit;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* ── Stats table ── */
+  .stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+  .stats-table th {
+    background: var(--accent-pale);
+    color: var(--accent);
+    padding: 8px 10px;
+    text-align: left;
+    font-weight: 700;
+    border-bottom: 2px solid var(--accent-light);
+  }
+  .stats-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .stats-table tr:last-child td { border-bottom: none; }
+  .stats-table tr:hover td { background: var(--accent-pale); }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+  .badge-green { background: var(--green-pale); color: var(--green); }
+  .badge-orange { background: var(--accent-pale); color: var(--accent); }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(60px);
+    background: var(--text);
+    color: #FFF;
+    padding: 10px 22px;
+    border-radius: 22px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    transition: transform .25s;
+    z-index: 999;
+    white-space: nowrap;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 24px;
+    width: 100%;
+    max-width: 360px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  }
+  .modal-box h3 { font-size: 1.1rem; margin-bottom: 16px; }
+  .modal-box input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 1rem;
+    margin-bottom: 14px;
+  }
+  .modal-box input:focus { outline: none; border-color: var(--accent); }
+
+  /* ── Empty state ── */
+  .empty {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+  .empty .icon { font-size: 2.5rem; margin-bottom: 8px; }
+
+  /* ── Summary bar ── */
+  .summary-bar {
+    background: var(--accent-pale);
+    border: 1px solid var(--accent-light);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .summary-bar .label { font-size: 0.82rem; color: var(--text-muted); }
+  .summary-bar .value { font-size: 1.1rem; font-weight: 900; color: var(--accent); }
+
+  /* ── Admin section header ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .section-header h3 { font-size: 0.95rem; font-weight: 700; }
+
+  label.field-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  input[type="date"], input[type="text"], input[type="number"], input[type="password"] {
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    background: var(--surface);
+    width: 100%;
+    margin-bottom: 12px;
+  }
+  input:focus { outline: none; border-color: var(--accent); }
+
+  .field-row { display: flex; gap: 10px; }
+  .field-row > div { flex: 1; }
+
+  select {
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    background: var(--surface);
+    width: 100%;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+
+  /* Export CSV button area */
+  .export-area {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .export-area .btn { flex: 1; min-width: 120px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span>🍱</span> 2026暑假便當</h1>
+  <span class="mode-badge" id="mode-badge">家長訂餐</span>
+</header>
+
+<nav>
+  <button class="active" onclick="switchTab('order')">📋 訂餐</button>
+  <button onclick="switchTab('stats')">📊 統計</button>
+  <button onclick="switchTab('admin')" id="admin-tab-btn">⚙️ 後台</button>
+</nav>
+
+<!-- ── 訂餐頁 ── -->
+<div class="page active" id="page-order">
+  <div class="card">
+    <div class="card-title">選擇日期</div>
+    <div class="date-grid" id="date-grid"></div>
+  </div>
+
+  <div class="card" id="student-card" style="display:none">
+    <div class="card-title">選擇學生</div>
+    <div class="student-grid" id="student-grid"></div>
+  </div>
+
+  <div class="card" id="menu-card" style="display:none">
+    <div class="card-title">今日菜單 — <span id="current-date-label"></span></div>
+    <div id="menu-items"></div>
+  </div>
+
+  <div id="order-actions" style="display:none">
+    <button class="btn btn-primary" onclick="saveOrder()">✅ 儲存訂單</button>
+    <button class="btn btn-danger" onclick="clearOrder()">🗑 清除此筆訂單</button>
+  </div>
+</div>
+
+<!-- ── 統計頁 ── -->
+<div class="page" id="page-stats">
+  <div class="card">
+    <div class="card-title">篩選</div>
+    <div class="field-row">
+      <div>
+        <label class="field-label">月份</label>
+        <select id="stats-month" onchange="renderStats()">
+          <option value="">全部</option>
+          <option value="7">7月</option>
+          <option value="8">8月</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label">學生</label>
+        <select id="stats-student" onchange="renderStats()">
+          <option value="">全部</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div id="stats-content"></div>
+
+  <div class="card">
+    <div class="card-title">匯出資料</div>
+    <div class="export-area">
+      <button class="btn btn-secondary" onclick="exportCSV()">📥 匯出 CSV</button>
+      <button class="btn btn-secondary" onclick="exportJSON()">📦 備份 JSON</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 後台頁 ── -->
+<div class="page" id="page-admin">
+  <div id="admin-locked">
+    <div class="card">
+      <div style="text-align:center;padding:16px 0">
+        <div style="font-size:2.5rem;margin-bottom:8px">🔒</div>
+        <div style="font-size:1rem;font-weight:700;margin-bottom:16px">後台管理區</div>
+        <input type="password" id="admin-pw-input" placeholder="輸入密碼" style="max-width:240px;display:block;margin:0 auto 12px">
+        <button class="btn btn-primary" style="max-width:240px;margin:0 auto" onclick="unlockAdmin()">進入後台</button>
+        <div id="pw-error" style="color:var(--red);font-size:0.82rem;margin-top:8px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="admin-unlocked" style="display:none">
+
+    <!-- 更改密碼 -->
+    <div class="card">
+      <div class="section-header">
+        <h3>🔑 修改後台密碼</h3>
+      </div>
+      <label class="field-label">新密碼</label>
+      <input type="password" id="new-pw" placeholder="輸入新密碼">
+      <button class="btn btn-secondary" onclick="changePassword()">更新密碼</button>
+    </div>
+
+    <!-- 學生名單 -->
+    <div class="card">
+      <div class="section-header">
+        <h3>👦 學生名單</h3>
+      </div>
+      <div id="student-list-edit"></div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <input type="text" id="new-student" placeholder="新增學生姓名" style="margin:0">
+        <button class="btn btn-secondary" style="width:auto;padding:9px 16px" onclick="addStudent()">＋</button>
+      </div>
+    </div>
+
+    <!-- 每日菜單設定 -->
+    <div class="card">
+      <div class="section-header">
+        <h3>🍱 設定每日菜單</h3>
+      </div>
+      <label class="field-label">選擇日期</label>
+      <input type="date" id="admin-date" min="2026-07-01" max="2026-08-31">
+
+      <div class="section-header" style="margin-top:4px">
+        <span style="font-size:0.85rem;color:var(--text-muted)">菜單品項</span>
+        <button class="btn btn-secondary" style="width:auto;padding:6px 12px;font-size:0.82rem" onclick="addMenuItem()">＋ 新增品項</button>
+      </div>
+      <div id="admin-menu-items"></div>
+      <button class="btn btn-primary" style="margin-top:12px" onclick="saveMenu()">💾 儲存菜單</button>
+    </div>
+
+    <!-- 危險區 -->
+    <div class="card">
+      <div class="card-title">危險操作</div>
+      <button class="btn btn-danger" onclick="clearAllData()">⚠️ 清除全部訂單資料</button>
+      <button class="btn btn-secondary" style="margin-top:8px" onclick="importJSON()">📤 匯入備份 JSON</button>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
+      <button class="btn btn-secondary" style="margin-top:8px" onclick="lockAdmin()">🔒 離開後台</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Password change modal (not used separately, inline above) -->
+
+<script>
+// ════════════════════════════════════════
+//  DATA LAYER — JSONBin.io (shared cloud)
+// ════════════════════════════════════════
+
+const BIN_ID  = '6a3c9dd1da38895dfefaee07';
+const API_KEY = '$2a$10$Je0WLLw7Zqcc8dMCjFo7GudCxbRqOitvn06.kROEsTwlMSXu/XqqW';
+const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
+// In-memory cache so UI reads are instant after first load
+let _cache = null;
+
+function showLoading(msg = '載入中…') {
+  let el = document.getElementById('loading-overlay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'loading-overlay';
+    el.style.cssText = `
+      position:fixed;inset:0;background:rgba(253,248,240,.88);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      z-index:9999;font-family:'Noto Sans TC',sans-serif;gap:12px;`;
+    el.innerHTML = `
+      <div style="font-size:2rem">🍱</div>
+      <div id="loading-msg" style="font-weight:700;color:#D4680A;font-size:1rem"></div>
+      <div style="width:40px;height:4px;background:#E8D5B7;border-radius:4px;overflow:hidden">
+        <div style="width:40%;height:100%;background:#D4680A;border-radius:4px;animation:bar .9s ease-in-out infinite alternate"></div>
+      </div>`;
+    const style = document.createElement('style');
+    style.textContent = '@keyframes bar{from{transform:translateX(0)}to{transform:translateX(150%)}}';
+    document.head.appendChild(style);
+    document.body.appendChild(el);
+  }
+  document.getElementById('loading-msg').textContent = msg;
+  el.style.display = 'flex';
+}
+function hideLoading() {
+  const el = document.getElementById('loading-overlay');
+  if (el) el.style.display = 'none';
+}
+
+async function getData() {
+  if (_cache) return _cache;
+  showLoading('讀取資料中…');
+  try {
+    const res = await fetch(BIN_URL + '/latest', {
+      headers: { 'X-Master-Key': API_KEY }
+    });
+    const json = await res.json();
+    _cache = json.record;
+  } catch (e) {
+    showToast('❌ 無法連線，請檢查網路');
+    _cache = {
+      password: 'admin1234',
+      students: [],
+      menus: {},
+      orders: {}
+    };
+  }
+  hideLoading();
+  return _cache;
+}
+
+async function saveData(d) {
+  _cache = d;
+  showLoading('儲存中…');
+  try {
+    await fetch(BIN_URL, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': API_KEY
+      },
+      body: JSON.stringify(d)
+    });
+  } catch (e) {
+    showToast('❌ 儲存失敗，請稍後再試');
+  }
+  hideLoading();
+}
+
+// ════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════
+let state = {
+  selectedDate: null,
+  selectedStudent: null,
+  currentOrder: {}, // { itemName: qty }
+  adminUnlocked: false,
+};
+
+// ════════════════════════════════════════
+//  TAB
+// ════════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + tab).classList.add('active');
+  document.querySelector(`nav button[onclick="switchTab('${tab}')"]`).classList.add('active');
+  if (tab === 'order') renderDateGrid();
+  if (tab === 'stats') renderStats();
+  if (tab === 'admin') renderAdminPage();
+}
+
+// ════════════════════════════════════════
+//  ORDER PAGE
+// ════════════════════════════════════════
+async function renderDateGrid() {
+  const data = await getData();
+  const grid = document.getElementById('date-grid');
+  grid.innerHTML = '';
+
+  // Generate weekdays Jul–Aug 2026
+  const dates = [];
+  for (let m = 7; m <= 8; m++) {
+    const daysInMonth = m === 7 ? 31 : 31;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(2026, m - 1, d);
+      const day = date.getDay(); // 0=Sun, 6=Sat
+      if (day !== 0 && day !== 6) dates.push(date);
+    }
+  }
+
+  const weekDays = ['日','一','二','三','四','五','六'];
+  dates.forEach(date => {
+    const key = formatDate(date);
+    const hasMenu = data.menus[key] && data.menus[key].length > 0;
+    if (!hasMenu) return; // Only show dates with menus
+    const btn = document.createElement('button');
+    btn.className = 'date-btn' + (state.selectedDate === key ? ' active' : '');
+    btn.textContent = `${date.getMonth()+1}/${date.getDate()}(${weekDays[date.getDay()]})`;
+    btn.onclick = () => selectDate(key);
+    grid.appendChild(btn);
+  });
+
+  if (grid.children.length === 0) {
+    grid.innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;padding:8px 0">尚未設定任何菜單日期，請先至後台新增菜單。</div>';
+  }
+}
+
+async function selectDate(dateKey) {
+  state.selectedDate = dateKey;
+  state.selectedStudent = null;
+  state.currentOrder = {};
+  await renderDateGrid();
+  await renderStudentGrid();
+  document.getElementById('student-card').style.display = 'block';
+  document.getElementById('menu-card').style.display = 'none';
+  document.getElementById('order-actions').style.display = 'none';
+}
+
+async function renderStudentGrid() {
+  const data = await getData();
+  const grid = document.getElementById('student-grid');
+  grid.innerHTML = '';
+  data.students.forEach(s => {
+    const btn = document.createElement('button');
+    const hasOrder = data.orders[state.selectedDate] && data.orders[state.selectedDate][s];
+    btn.className = 'student-btn' + (state.selectedStudent === s ? ' active' : '') + (hasOrder ? ' ordered' : '');
+    btn.textContent = s;
+    btn.onclick = () => selectStudent(s);
+    grid.appendChild(btn);
+  });
+}
+
+async function selectStudent(name) {
+  state.selectedStudent = name;
+  const data = await getData();
+  const existing = data.orders[state.selectedDate] && data.orders[state.selectedDate][name];
+  if (existing) {
+    state.currentOrder = {};
+    existing.forEach(item => { state.currentOrder[item.name] = item.qty; });
+  } else {
+    state.currentOrder = {};
+  }
+  await renderStudentGrid();
+  await renderMenuItems();
+  document.getElementById('menu-card').style.display = 'block';
+  document.getElementById('order-actions').style.display = 'block';
+  const [y, m, d] = state.selectedDate.split('-');
+  document.getElementById('current-date-label').textContent = `${parseInt(m)}月${parseInt(d)}日`;
+}
+
+async function renderMenuItems() {
+  const data = await getData();
+  const menu = data.menus[state.selectedDate] || [];
+  const container = document.getElementById('menu-items');
+  container.innerHTML = '';
+
+  if (menu.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="icon">📭</div>此日期尚無菜單</div>';
+    return;
+  }
+
+  menu.forEach(item => {
+    const qty = state.currentOrder[item.name] || 0;
+    const row = document.createElement('div');
+    row.className = 'menu-item';
+    row.innerHTML = `
+      <div class="menu-item-info">
+        <div class="menu-item-name">${item.name}</div>
+        <div class="menu-item-price">NT$${item.price}</div>
+      </div>
+      <div class="qty-control">
+        <button class="qty-btn" onclick="changeQty('${item.name}', -1)">－</button>
+        <span class="qty-num" id="qty-${item.name.replace(/[^a-zA-Z0-9]/g,'_')}">${qty}</span>
+        <button class="qty-btn" onclick="changeQty('${item.name}', 1)">＋</button>
+      </div>`;
+    container.appendChild(row);
+  });
+}
+
+function changeQty(name, delta) {
+  const current = state.currentOrder[name] || 0;
+  const next = Math.max(0, current + delta);
+  state.currentOrder[name] = next;
+  const id = 'qty-' + name.replace(/[^a-zA-Z0-9]/g,'_');
+  const el = document.getElementById(id);
+  if (el) el.textContent = next;
+}
+
+async function saveOrder() {
+  if (!state.selectedDate || !state.selectedStudent) return showToast('請先選擇日期和學生');
+  const data = await getData();
+  const menuItems = data.menus[state.selectedDate] || [];
+  const order = menuItems
+    .filter(item => (state.currentOrder[item.name] || 0) > 0)
+    .map(item => ({ name: item.name, price: item.price, qty: state.currentOrder[item.name] }));
+
+  if (!data.orders[state.selectedDate]) data.orders[state.selectedDate] = {};
+  if (order.length === 0) {
+    delete data.orders[state.selectedDate][state.selectedStudent];
+  } else {
+    data.orders[state.selectedDate][state.selectedStudent] = order;
+  }
+  await saveData(data);
+  await renderStudentGrid();
+  showToast(order.length > 0 ? `✅ ${state.selectedStudent} 的訂單已儲存` : `🗑 ${state.selectedStudent} 訂單已清除`);
+}
+
+function clearOrder() {
+  if (!state.selectedDate || !state.selectedStudent) return;
+  state.currentOrder = {};
+  renderMenuItems();
+  showToast('已清除，記得按儲存訂單以確認。');
+}
+
+// ════════════════════════════════════════
+//  STATS PAGE
+// ════════════════════════════════════════
+async function renderStats() {
+  const data = await getData();
+  const monthFilter = document.getElementById('stats-month').value;
+  const studentFilter = document.getElementById('stats-student').value;
+
+  // Populate student select
+  const sel = document.getElementById('stats-student');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">全部</option>';
+  data.students.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    if (s === current) opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  // Build summary
+  // Aggregate by student per date
+  const rows = []; // { student, date, items, total }
+  const itemTotals = {}; // { itemName: totalQty }
+  const studentTotals = {}; // { student: total }
+
+  Object.entries(data.orders).forEach(([date, dayOrders]) => {
+    const [y, m] = date.split('-');
+    if (monthFilter && parseInt(m) !== parseInt(monthFilter)) return;
+    Object.entries(dayOrders).forEach(([student, items]) => {
+      if (studentFilter && student !== studentFilter) return;
+      const total = items.reduce((s, i) => s + i.price * i.qty, 0);
+      rows.push({ student, date, items, total });
+      items.forEach(i => {
+        itemTotals[i.name] = (itemTotals[i.name] || 0) + i.qty;
+        studentTotals[student] = (studentTotals[student] || 0) + total;
+      });
+    });
+  });
+
+  rows.sort((a, b) => a.date.localeCompare(b.date));
+
+  const container = document.getElementById('stats-content');
+  container.innerHTML = '';
+
+  // Summary numbers
+  const totalAmount = rows.reduce((s, r) => s + r.total, 0);
+  const totalOrders = rows.length;
+  const summaryDiv = document.createElement('div');
+  summaryDiv.innerHTML = `
+    <div style="display:flex;gap:10px;margin-bottom:14px">
+      <div class="summary-bar" style="flex:1"><span class="label">總筆數</span><span class="value">${totalOrders}</span></div>
+      <div class="summary-bar" style="flex:1"><span class="label">總金額</span><span class="value">NT$${totalAmount}</span></div>
+    </div>`;
+  container.appendChild(summaryDiv);
+
+  if (rows.length === 0) {
+    container.innerHTML += '<div class="empty"><div class="icon">📭</div>尚無訂單資料</div>';
+    return;
+  }
+
+  // Per-item quantity summary
+  if (Object.keys(itemTotals).length) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `<div class="card-title">品項訂購量統計</div>`;
+    const tbl = document.createElement('table');
+    tbl.className = 'stats-table';
+    tbl.innerHTML = `<thead><tr><th>品項</th><th>數量</th></tr></thead>`;
+    const tbody = document.createElement('tbody');
+    Object.entries(itemTotals).sort((a,b)=>b[1]-a[1]).forEach(([name, qty]) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${name}</td><td><span class="badge badge-orange">${qty} 份</span></td>`;
+      tbody.appendChild(tr);
+    });
+    tbl.appendChild(tbody);
+    card.appendChild(tbl);
+    container.appendChild(card);
+  }
+
+  // Per-student summary
+  if (Object.keys(studentTotals).length) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `<div class="card-title">學生消費統計</div>`;
+    const tbl = document.createElement('table');
+    tbl.className = 'stats-table';
+    tbl.innerHTML = `<thead><tr><th>學生</th><th>金額</th></tr></thead>`;
+    const tbody = document.createElement('tbody');
+    Object.entries(studentTotals).sort((a,b)=>b[1]-a[1]).forEach(([name, total]) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${name}</td><td><span class="badge badge-green">NT$${total}</span></td>`;
+      tbody.appendChild(tr);
+    });
+    tbl.appendChild(tbody);
+    card.appendChild(tbl);
+    container.appendChild(card);
+  }
+
+  // Detail table
+  const card2 = document.createElement('div');
+  card2.className = 'card';
+  card2.innerHTML = `<div class="card-title">訂單明細</div>`;
+  const tbl2 = document.createElement('table');
+  tbl2.className = 'stats-table';
+  tbl2.innerHTML = `<thead><tr><th>日期</th><th>學生</th><th>品項</th><th>金額</th></tr></thead>`;
+  const tbody2 = document.createElement('tbody');
+  rows.forEach(r => {
+    const [y, m, d] = r.date.split('-');
+    const dateStr = `${parseInt(m)}/${parseInt(d)}`;
+    const itemStr = r.items.map(i => `${i.name}×${i.qty}`).join('、');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${dateStr}</td><td>${r.student}</td><td style="font-size:0.82rem">${itemStr}</td><td>NT$${r.total}</td>`;
+    tbody2.appendChild(tr);
+  });
+  tbl2.appendChild(tbody2);
+  card2.appendChild(tbl2);
+  container.appendChild(card2);
+}
+
+async function exportCSV() {
+  const data = await getData();
+  const rows = [['日期','學生','品項','數量','單價','小計']];
+  Object.entries(data.orders).forEach(([date, dayOrders]) => {
+    Object.entries(dayOrders).forEach(([student, items]) => {
+      items.forEach(item => {
+        rows.push([date, student, item.name, item.qty, item.price, item.price * item.qty]);
+      });
+    });
+  });
+  const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  downloadFile('bento_orders.csv', csv, 'text/csv;charset=utf-8;');
+}
+
+async function exportJSON() {
+  const data = await getData();
+  downloadFile('bento_backup.json', JSON.stringify(data, null, 2), 'application/json');
+}
+
+function downloadFile(name, content, type) {
+  const a = document.createElement('a');
+  a.href = 'data:' + type + ',' + encodeURIComponent(content);
+  a.download = name;
+  a.click();
+}
+
+// ════════════════════════════════════════
+//  ADMIN PAGE
+// ════════════════════════════════════════
+async function renderAdminPage() {
+  if (!state.adminUnlocked) return;
+  await renderStudentListEdit();
+  await renderAdminMenuItems();
+}
+
+async function unlockAdmin() {
+  const data = await getData();
+  const pw = document.getElementById('admin-pw-input').value;
+  if (pw === data.password) {
+    state.adminUnlocked = true;
+    document.getElementById('admin-locked').style.display = 'none';
+    document.getElementById('admin-unlocked').style.display = 'block';
+    document.getElementById('mode-badge').textContent = '後台管理';
+    renderStudentListEdit();
+    // Set today's date
+    const today = new Date();
+    document.getElementById('admin-date').value = formatDate(today);
+    await renderAdminMenuItems();
+    document.getElementById('pw-error').textContent = '';
+  } else {
+    document.getElementById('pw-error').textContent = '密碼錯誤，請重試。';
+  }
+  document.getElementById('admin-pw-input').value = '';
+}
+
+function lockAdmin() {
+  state.adminUnlocked = false;
+  document.getElementById('admin-locked').style.display = 'block';
+  document.getElementById('admin-unlocked').style.display = 'none';
+  document.getElementById('mode-badge').textContent = '家長訂餐';
+}
+
+async function changePassword() {
+  const pw = document.getElementById('new-pw').value.trim();
+  if (!pw) return showToast('請輸入新密碼');
+  const data = await getData();
+  data.password = pw;
+  await saveData(data);
+  document.getElementById('new-pw').value = '';
+  showToast('✅ 密碼已更新');
+}
+
+async function renderStudentListEdit() {
+  const data = await getData();
+  const container = document.getElementById('student-list-edit');
+  container.innerHTML = '';
+  data.students.forEach((s, i) => {
+    const row = document.createElement('div');
+    row.className = 'menu-edit-row';
+    row.innerHTML = `
+      <input type="text" value="${s}" onchange="updateStudent(${i}, this.value)">
+      <button class="del-btn" onclick="removeStudent(${i})">✕</button>`;
+    container.appendChild(row);
+  });
+}
+
+async function updateStudent(i, val) {
+  const data = await getData();
+  data.students[i] = val;
+  await saveData(data);
+}
+
+async function removeStudent(i) {
+  const data = await getData();
+  data.students.splice(i, 1);
+  await saveData(data);
+  renderStudentListEdit();
+}
+
+async function addStudent() {
+  const inp = document.getElementById('new-student');
+  const name = inp.value.trim();
+  if (!name) return;
+  const data = await getData();
+  data.students.push(name);
+  await saveData(data);
+  inp.value = '';
+  renderStudentListEdit();
+  showToast(`✅ 已新增 ${name}`);
+}
+
+// Admin menu editor state
+let adminMenuDraft = [];
+
+async function renderAdminMenuItems() {
+  const dateInput = document.getElementById('admin-date');
+  const date = dateInput.value;
+  const data = await getData();
+  adminMenuDraft = (data.menus[date] || []).map(i => ({ ...i }));
+  drawAdminMenuItems();
+}
+
+function drawAdminMenuItems() {
+  const container = document.getElementById('admin-menu-items');
+  container.innerHTML = '';
+  adminMenuDraft.forEach((item, i) => {
+    const row = document.createElement('div');
+    row.className = 'menu-edit-row';
+    row.innerHTML = `
+      <input type="text" value="${item.name}" placeholder="品項名稱" onchange="adminMenuDraft[${i}].name=this.value">
+      <input type="number" class="price" value="${item.price}" placeholder="價格" min="0" onchange="adminMenuDraft[${i}].price=parseInt(this.value)||0">
+      <button class="del-btn" onclick="removeAdminMenuItem(${i})">✕</button>`;
+    container.appendChild(row);
+  });
+}
+
+function addMenuItem() {
+  adminMenuDraft.push({ name: '', price: 0 });
+  drawAdminMenuItems();
+}
+
+function removeAdminMenuItem(i) {
+  adminMenuDraft.splice(i, 1);
+  drawAdminMenuItems();
+}
+
+async function saveMenu() {
+  const date = document.getElementById('admin-date').value;
+  if (!date) return showToast('請先選擇日期');
+  const valid = adminMenuDraft.filter(i => i.name.trim());
+  const data = await getData();
+  if (valid.length === 0) {
+    delete data.menus[date];
+  } else {
+    data.menus[date] = valid;
+  }
+  await saveData(data);
+  showToast(`✅ ${date} 菜單已儲存（${valid.length} 項）`);
+  await renderDateGrid();
+}
+
+async function clearAllData() {
+  if (!confirm('確定要清除全部訂單資料嗎？此操作無法復原。')) return;
+  const data = await getData();
+  data.orders = {};
+  await saveData(data);
+  showToast('🗑 全部訂單已清除');
+}
+
+function importJSON() {
+  document.getElementById('import-file').click();
+}
+
+async function handleImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    try {
+      const imported = JSON.parse(ev.target.result);
+      if (imported.students && imported.menus && imported.orders) {
+        await saveData(imported);
+        _cache = imported;
+        showToast('✅ 備份匯入成功');
+        renderStudentListEdit();
+        renderAdminMenuItems();
+      } else {
+        showToast('❌ 檔案格式不正確');
+      }
+    } catch {
+      showToast('❌ 無法解析 JSON 檔案');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+// ════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════
+function formatDate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════
+
+// Invalidate cache when admin changes date (so menu reloads fresh)
+document.getElementById('admin-date').addEventListener('change', () => {
+  renderAdminMenuItems();
+});
+
+renderDateGrid();
+</script>
+</body>
+</html>
