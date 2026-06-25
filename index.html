@@ -3,25 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>2026暑假便當訂購</title>
+<title>福林64餐點訂購系統</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
 
   :root {
-    --bg: #FDF8F0;
+    /* 柔和藍色系：降低飽和度與對比，適合長時間操作 */
+    --bg: #F6F9FB;
     --surface: #FFFFFF;
-    --surface2: #FFF5E6;
-    --border: #E8D5B7;
-    --accent: #D4680A;
-    --accent-light: #F5B87A;
-    --accent-pale: #FEF0DC;
-    --text: #2C1A0E;
-    --text-muted: #8B6A4A;
-    --green: #2E7D52;
-    --green-pale: #E8F5EE;
-    --red: #C0392B;
-    --red-pale: #FDECEA;
-    --shadow: 0 2px 12px rgba(44,26,14,0.10);
+    --surface2: #EEF3F7;
+    --border: #DCE7EF;
+    --accent: #6E93B5;
+    --accent-light: #A3C0DA;
+    --accent-pale: #E9F1F7;
+    --text: #3C4751;
+    --text-muted: #7C8A97;
+    --green: #6BA989;
+    --green-pale: #EAF5EF;
+    --red: #D49494;
+    --red-pale: #FBEEEE;
+    --shadow: 0 2px 10px rgba(60, 71, 81, 0.06);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -41,7 +42,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    box-shadow: 0 2px 8px rgba(60,71,81,0.10);
   }
   header h1 {
     font-size: 1.25rem;
@@ -188,7 +189,8 @@
     transition: all .15s;
     font-family: inherit;
   }
-  .qty-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .qty-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .qty-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .qty-num {
     min-width: 24px;
     text-align: center;
@@ -210,10 +212,10 @@
     transition: all .15s;
   }
   .btn-primary { background: var(--accent); color: #FFF; }
-  .btn-primary:hover { background: #B8560A; }
+  .btn-primary:hover:not(:disabled) { background: #3D6C96; }
   .btn-secondary { background: var(--surface2); color: var(--accent); border: 2px solid var(--accent-light); }
-  .btn-danger { background: var(--red-pale); color: var(--red); border: 2px solid #EDADA8; }
-  .btn-success { background: var(--green-pale); color: var(--green); border: 2px solid #A8D5BB; }
+  .btn-danger { background: var(--red-pale); color: var(--red); border: 2px solid #ECA5A5; }
+  .btn-success { background: var(--green-pale); color: var(--green); border: 2px solid #A1D3B6; }
   .btn + .btn { margin-top: 8px; }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -276,7 +278,24 @@
     font-weight: 700;
   }
   .badge-green { background: var(--green-pale); color: var(--green); }
-  .badge-orange { background: var(--accent-pale); color: var(--accent); }
+  .badge-blue { background: var(--accent-pale); color: var(--accent); }
+  .badge-gray { background: #F1F4F7; color: var(--text-muted); border: 1px solid #D9E1E8; }
+  .badge-red { background: var(--red-pale); color: var(--red); border: 1px solid #F5C6C6; }
+
+  /* Payment Status Select */
+  .status-select {
+    padding: 4px;
+    font-size: 0.8rem;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    margin-bottom: 0;
+    width: 100%;
+    background: var(--surface);
+    font-family: inherit;
+    color: var(--text);
+  }
+  .status-select.paid { background: var(--green-pale); color: var(--green); border-color: var(--green); font-weight: 700; }
+  .status-select.canceled { background: var(--red-pale); color: var(--red); border-color: var(--red); font-weight: 700; }
 
   /* ── Toast ── */
   #toast {
@@ -295,38 +314,6 @@
     white-space: nowrap;
   }
   #toast.show { transform: translateX(-50%) translateY(0); }
-
-  /* ── Modal ── */
-  .modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 100;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
-  .modal-overlay.open { display: flex; }
-  .modal-box {
-    background: var(--surface);
-    border-radius: 16px;
-    padding: 24px;
-    width: 100%;
-    max-width: 360px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-  }
-  .modal-box h3 { font-size: 1.1rem; margin-bottom: 16px; }
-  .modal-box input {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
-    font-family: inherit;
-    font-size: 1rem;
-    margin-bottom: 14px;
-  }
-  .modal-box input:focus { outline: none; border-color: var(--accent); }
 
   /* ── Empty state ── */
   .empty {
@@ -367,7 +354,7 @@
     color: var(--text-muted);
     margin-bottom: 4px;
   }
-  input[type="date"], input[type="text"], input[type="number"], input[type="password"] {
+  input[type="date"], input[type="datetime-local"], input[type="text"], input[type="number"], input[type="password"] {
     padding: 9px 12px;
     border: 1.5px solid var(--border);
     border-radius: 8px;
@@ -379,8 +366,8 @@
   }
   input:focus { outline: none; border-color: var(--accent); }
 
-  .field-row { display: flex; gap: 10px; }
-  .field-row > div { flex: 1; }
+  .field-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .field-row > div { flex: 1; min-width: 120px; }
 
   select {
     padding: 9px 12px;
@@ -424,7 +411,7 @@
 <body>
 
 <header>
-  <h1><span>🍱</span> 2026暑假便當</h1>
+  <h1><span>🍱</span> 福林64餐點訂購系統</h1>
   <span class="mode-badge" id="mode-badge">家長訂餐</span>
 </header>
 
@@ -436,6 +423,8 @@
 
 <!-- ── 訂餐頁 ── -->
 <div class="page active" id="page-order">
+  <img src="https://i.ibb.co/YFRss0PM/bn.jpg" alt="首頁橫幅" style="width:100%; border-radius:12px; margin-bottom:16px; box-shadow: var(--shadow); display:block;">
+  
   <div class="card">
     <div class="card-title">選擇日期</div>
     <div class="date-grid" id="date-grid"></div>
@@ -464,7 +453,7 @@
   <div style="display:flex;gap:6px;margin-bottom:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px">
     <button class="stats-tab-btn active" id="stab-daily"    onclick="switchStatsTab('daily')">📋 每日訂單</button>
     <button class="stats-tab-btn"        id="stab-items"    onclick="switchStatsTab('items')">🍱 品項統計</button>
-    <button class="stats-tab-btn"        id="stab-billing"  onclick="switchStatsTab('billing')">💰 月份帳單</button>
+    <button class="stats-tab-btn"        id="stab-billing"  onclick="switchStatsTab('billing')">💰 區間帳單</button>
   </div>
 
   <!-- ── 每日訂單篩選 ── -->
@@ -473,7 +462,7 @@
       <div class="field-row" style="align-items:flex-end">
         <div>
           <label class="field-label">選擇日期</label>
-          <input type="date" id="filter-date" min="2026-07-01" max="2026-08-31" style="margin-bottom:0" onchange="renderStats()">
+          <input type="date" id="filter-date" style="margin-bottom:0" onchange="renderStats()">
         </div>
         <div>
           <label class="field-label">學生</label>
@@ -491,26 +480,27 @@
       <div class="field-row" style="align-items:flex-end">
         <div>
           <label class="field-label">起始日期</label>
-          <input type="date" id="filter-from" min="2026-07-01" max="2026-08-31" style="margin-bottom:0" onchange="renderStats()">
+          <input type="date" id="filter-from" style="margin-bottom:0" onchange="renderStats()">
         </div>
         <div>
           <label class="field-label">結束日期</label>
-          <input type="date" id="filter-to" min="2026-07-01" max="2026-08-31" style="margin-bottom:0" onchange="renderStats()">
+          <input type="date" id="filter-to" style="margin-bottom:0" onchange="renderStats()">
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ── 月份帳單篩選 ── -->
+  <!-- ── 區間帳單篩選 ── -->
   <div id="filter-billing" style="display:none">
     <div class="card" style="margin-bottom:10px">
       <div class="field-row" style="align-items:flex-end">
         <div>
-          <label class="field-label">月份</label>
-          <select id="billing-month" style="margin-bottom:0" onchange="renderStats()">
-            <option value="7">7月</option>
-            <option value="8">8月</option>
-          </select>
+          <label class="field-label">起始日期</label>
+          <input type="date" id="billing-from" style="margin-bottom:0" onchange="renderStats()">
+        </div>
+        <div>
+          <label class="field-label">結束日期</label>
+          <input type="date" id="billing-to" style="margin-bottom:0" onchange="renderStats()">
         </div>
         <div>
           <label class="field-label">學生</label>
@@ -574,23 +564,35 @@
     <!-- 每日菜單設定 -->
     <div class="card">
       <div class="section-header">
-        <h3>🍱 設定每日菜單</h3>
+        <h3>🍱 設定每日菜單與期限</h3>
       </div>
       <label class="field-label">選擇日期</label>
-      <input type="date" id="admin-date" min="2026-07-01" max="2026-08-31">
+      <input type="date" id="admin-date">
+
+      <label class="field-label" style="margin-top:8px">截止訂購時間 (留空表示不限制)</label>
+      <input type="datetime-local" id="admin-deadline" style="margin-bottom:12px">
 
       <div class="section-header" style="margin-top:4px">
         <span style="font-size:0.85rem;color:var(--text-muted)">菜單品項</span>
         <button class="btn btn-secondary" style="width:auto;padding:6px 12px;font-size:0.82rem" onclick="addMenuItem()">＋ 新增品項</button>
       </div>
       <div id="admin-menu-items"></div>
-      <button class="btn btn-primary" style="margin-top:12px" onclick="saveMenu()">💾 儲存菜單</button>
+      <button class="btn btn-primary" style="margin-top:12px" onclick="saveMenu()">💾 儲存菜單設定</button>
     </div>
 
     <!-- 危險區 -->
     <div class="card">
       <div class="card-title">危險操作</div>
-      <button class="btn btn-danger" onclick="clearAllData()">⚠️ 清除全部訂單資料</button>
+      <button class="btn btn-danger" id="clear-trigger-btn" onclick="showClearConfirm()">⚠️ 清除全部訂單資料</button>
+
+      <div id="clear-confirm-box" style="display:none;margin-top:10px;padding:12px;border:2px dashed var(--red);border-radius:10px;background:var(--red-pale);">
+        <div style="font-size:0.85rem;color:var(--text);font-weight:700;margin-bottom:6px;">⚠️ 這會清除「所有訂購紀錄與付款狀態」</div>
+        <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px;">學生名單與菜單設定不會受影響，但訂單一旦清除無法復原。請在下方輸入「<b>清除訂單</b>」以確認：</div>
+        <input type="text" id="clear-confirm-input" placeholder="請輸入：清除訂單" oninput="checkClearConfirmInput()">
+        <button class="btn btn-danger" id="clear-confirm-btn" disabled onclick="clearAllData()">🗑 確認永久清除</button>
+        <button class="btn btn-secondary" style="margin-top:8px" onclick="hideClearConfirm()">取消</button>
+      </div>
+
       <button class="btn btn-secondary" style="margin-top:8px" onclick="importJSON()">📤 匯入備份 JSON</button>
       <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
       <button class="btn btn-secondary" style="margin-top:8px" onclick="lockAdmin()">🔒 離開後台</button>
@@ -601,18 +603,14 @@
 <!-- Toast -->
 <div id="toast"></div>
 
-<!-- Password change modal (not used separately, inline above) -->
-
 <script>
 // ════════════════════════════════════════
-//  DATA LAYER — JSONBin.io (shared cloud)
+//  DATA LAYER
 // ════════════════════════════════════════
-
 const BIN_ID  = '6a3c9dd1da38895dfefaee07';
 const API_KEY = '$2a$10$Je0WLLw7Zqcc8dMCjFo7GudCxbRqOitvn06.kROEsTwlMSXu/XqqW';
 const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
-// In-memory cache so UI reads are instant after first load
 let _cache = null;
 
 function showLoading(msg = '載入中…') {
@@ -620,47 +618,28 @@ function showLoading(msg = '載入中…') {
   if (!el) {
     el = document.createElement('div');
     el.id = 'loading-overlay';
-    el.style.cssText = `
-      position:fixed;inset:0;background:rgba(253,248,240,.88);
-      display:flex;flex-direction:column;align-items:center;justify-content:center;
-      z-index:9999;font-family:'Noto Sans TC',sans-serif;gap:12px;`;
-    el.innerHTML = `
-      <div style="font-size:2rem">🍱</div>
-      <div id="loading-msg" style="font-weight:700;color:#D4680A;font-size:1rem"></div>
-      <div style="width:40px;height:4px;background:#E8D5B7;border-radius:4px;overflow:hidden">
-        <div style="width:40%;height:100%;background:#D4680A;border-radius:4px;animation:bar .9s ease-in-out infinite alternate"></div>
-      </div>`;
-    const style = document.createElement('style');
-    style.textContent = '@keyframes bar{from{transform:translateX(0)}to{transform:translateX(150%)}}';
-    document.head.appendChild(style);
+    el.style.cssText = `position:fixed;inset:0;background:rgba(245,248,250,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;font-family:'Noto Sans TC',sans-serif;gap:12px;`;
+    el.innerHTML = `<div style="font-size:2rem">🍱</div><div id="loading-msg" style="font-weight:700;color:#5084B2;font-size:1rem"></div>`;
     document.body.appendChild(el);
   }
   document.getElementById('loading-msg').textContent = msg;
   el.style.display = 'flex';
 }
-function hideLoading() {
-  const el = document.getElementById('loading-overlay');
-  if (el) el.style.display = 'none';
-}
+function hideLoading() { const el = document.getElementById('loading-overlay'); if (el) el.style.display = 'none'; }
 
 async function getData() {
   if (_cache) return _cache;
   showLoading('讀取資料中…');
   try {
-    const res = await fetch(BIN_URL + '/latest', {
-      headers: { 'X-Master-Key': API_KEY }
-    });
+    const res = await fetch(BIN_URL + '/latest', { headers: { 'X-Master-Key': API_KEY } });
     const json = await res.json();
     _cache = json.record;
   } catch (e) {
-    showToast('❌ 無法連線，請檢查網路');
-    _cache = {
-      password: 'admin1234',
-      students: [],
-      menus: {},
-      orders: {}
-    };
+    showToast('❌ 無法連線');
+    _cache = { password: 'admin1234', students: [], menus: {}, orders: {}, deadlines: {}, payments: {} };
   }
+  if (!_cache.deadlines) _cache.deadlines = {};
+  if (!_cache.payments) _cache.payments = {};
   hideLoading();
   return _cache;
 }
@@ -669,77 +648,42 @@ async function saveData(d) {
   _cache = d;
   showLoading('儲存中…');
   try {
-    await fetch(BIN_URL, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Master-Key': API_KEY
-      },
-      body: JSON.stringify(d)
-    });
-  } catch (e) {
-    showToast('❌ 儲存失敗，請稍後再試');
-  }
+    await fetch(BIN_URL, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY }, body: JSON.stringify(d) });
+  } catch (e) { showToast('❌ 儲存失敗'); }
   hideLoading();
 }
 
 // ════════════════════════════════════════
-//  STATE
+//  核心邏輯
 // ════════════════════════════════════════
-let state = {
-  selectedDate: null,
-  selectedStudent: null,
-  currentOrder: {}, // { itemName: qty }
-  adminUnlocked: false,
-};
+let state = { selectedDate: null, selectedStudent: null, currentOrder: {}, adminUnlocked: false };
 
-// ════════════════════════════════════════
-//  TAB
-// ════════════════════════════════════════
-function switchTab(tab) {
+async function switchTab(tab) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   document.getElementById('page-' + tab).classList.add('active');
   document.querySelector(`nav button[onclick="switchTab('${tab}')"]`).classList.add('active');
   if (tab === 'order') renderDateGrid();
-  if (tab === 'stats') { currentStatsTab = 'daily'; switchStatsTab('daily'); }
+  if (tab === 'stats') { await initStatsDefaults(); currentStatsTab = 'daily'; switchStatsTab('daily'); }
   if (tab === 'admin') renderAdminPage();
 }
 
-// ════════════════════════════════════════
-//  ORDER PAGE
-// ════════════════════════════════════════
 async function renderDateGrid() {
   const data = await getData();
   const grid = document.getElementById('date-grid');
   grid.innerHTML = '';
-
-  // Generate weekdays Jul–Aug 2026
-  const dates = [];
-  for (let m = 7; m <= 8; m++) {
-    const daysInMonth = m === 7 ? 31 : 31;
-    for (let d = 1; d <= daysInMonth; d++) {
-      const date = new Date(2026, m - 1, d);
-      const day = date.getDay(); // 0=Sun, 6=Sat
-      if (day !== 0 && day !== 6) dates.push(date);
-    }
-  }
-
+  const dates = Object.keys(data.menus || {}).sort();
   const weekDays = ['日','一','二','三','四','五','六'];
-  dates.forEach(date => {
-    const key = formatDate(date);
-    const hasMenu = data.menus[key] && data.menus[key].length > 0;
-    if (!hasMenu) return; // Only show dates with menus
+  dates.forEach(key => {
+    if (!data.menus[key] || data.menus[key].length === 0) return;
+    const [y, m, d] = key.split('-');
+    const dateObj = new Date(key + 'T00:00:00');
     const btn = document.createElement('button');
     btn.className = 'date-btn' + (state.selectedDate === key ? ' active' : '');
-    btn.textContent = `${date.getMonth()+1}/${date.getDate()}(${weekDays[date.getDay()]})`;
+    btn.textContent = `${parseInt(m)}/${parseInt(d)}(${weekDays[dateObj.getDay()]})`;
     btn.onclick = () => selectDate(key);
     grid.appendChild(btn);
   });
-
-  if (grid.children.length === 0) {
-    grid.innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;padding:8px 0">尚未設定任何菜單日期，請先至後台新增菜單。</div>';
-  }
 }
 
 async function selectDate(dateKey) {
@@ -771,17 +715,11 @@ async function selectStudent(name) {
   state.selectedStudent = name;
   const data = await getData();
   const existing = data.orders[state.selectedDate] && data.orders[state.selectedDate][name];
-  if (existing) {
-    state.currentOrder = {};
-    existing.forEach(item => { state.currentOrder[item.name] = item.qty; });
-  } else {
-    state.currentOrder = {};
-  }
+  state.currentOrder = existing ? existing.reduce((acc, i) => ({...acc, [i.name]: i.qty}), {}) : {};
   await renderStudentGrid();
   await renderMenuItems();
   document.getElementById('menu-card').style.display = 'block';
-  document.getElementById('order-actions').style.display = 'block';
-  const [y, m, d] = state.selectedDate.split('-');
+  const [, m, d] = state.selectedDate.split('-');
   document.getElementById('current-date-label').textContent = `${parseInt(m)}月${parseInt(d)}日`;
 }
 
@@ -789,12 +727,10 @@ async function renderMenuItems() {
   const data = await getData();
   const menu = data.menus[state.selectedDate] || [];
   const container = document.getElementById('menu-items');
+  const actionsContainer = document.getElementById('order-actions');
   container.innerHTML = '';
-
-  if (menu.length === 0) {
-    container.innerHTML = '<div class="empty"><div class="icon">📭</div>此日期尚無菜單</div>';
-    return;
-  }
+  const deadlineStr = (data.deadlines || {})[state.selectedDate];
+  const isPastDeadline = deadlineStr && new Date() > new Date(deadlineStr);
 
   menu.forEach(item => {
     const qty = state.currentOrder[item.name] || 0;
@@ -806,55 +742,76 @@ async function renderMenuItems() {
         <div class="menu-item-price">NT$${item.price}</div>
       </div>
       <div class="qty-control">
-        <button class="qty-btn" onclick="changeQty('${item.name}', -1)">－</button>
-        <span class="qty-num" id="qty-${item.name.replace(/[^a-zA-Z0-9]/g,'_')}">${qty}</span>
-        <button class="qty-btn" onclick="changeQty('${item.name}', 1)">＋</button>
+        <button class="qty-btn" onclick="changeQty('${item.name}', -1)" ${isPastDeadline && !state.adminUnlocked ? 'disabled' : ''}>－</button>
+        <span class="qty-num">${qty}</span>
+        <button class="qty-btn" onclick="changeQty('${item.name}', 1)" ${isPastDeadline && !state.adminUnlocked ? 'disabled' : ''}>＋</button>
       </div>`;
     container.appendChild(row);
   });
+
+  if (isPastDeadline && !state.adminUnlocked) {
+    actionsContainer.innerHTML = '<div style="text-align:center;color:var(--red);font-weight:bold;padding:10px;">⏳ 已過期，無法修改。</div>';
+  } else {
+    actionsContainer.innerHTML = `<button class="btn btn-primary" onclick="saveOrder()">✅ 儲存訂單</button><button class="btn btn-danger" onclick="clearOrder()">🗑 清除訂單</button>`;
+  }
+  actionsContainer.style.display = 'block';
 }
 
 function changeQty(name, delta) {
-  const current = state.currentOrder[name] || 0;
-  const next = Math.max(0, current + delta);
+  const next = Math.max(0, (state.currentOrder[name] || 0) + delta);
   state.currentOrder[name] = next;
-  const id = 'qty-' + name.replace(/[^a-zA-Z0-9]/g,'_');
-  const el = document.getElementById(id);
-  if (el) el.textContent = next;
+  renderMenuItems();
 }
 
 async function saveOrder() {
-  if (!state.selectedDate || !state.selectedStudent) return showToast('請先選擇日期和學生');
   const data = await getData();
   const menuItems = data.menus[state.selectedDate] || [];
-  const order = menuItems
-    .filter(item => (state.currentOrder[item.name] || 0) > 0)
-    .map(item => ({ name: item.name, price: item.price, qty: state.currentOrder[item.name] }));
-
+  const order = menuItems.filter(i => (state.currentOrder[i.name] || 0) > 0).map(i => ({ name: i.name, price: i.price, qty: state.currentOrder[i.name] }));
   if (!data.orders[state.selectedDate]) data.orders[state.selectedDate] = {};
-  if (order.length === 0) {
-    delete data.orders[state.selectedDate][state.selectedStudent];
-  } else {
-    data.orders[state.selectedDate][state.selectedStudent] = order;
-  }
+  if (order.length === 0) delete data.orders[state.selectedDate][state.selectedStudent];
+  else data.orders[state.selectedDate][state.selectedStudent] = order;
   await saveData(data);
   await renderStudentGrid();
-  showToast(order.length > 0 ? `✅ ${state.selectedStudent} 的訂單已儲存` : `🗑 ${state.selectedStudent} 訂單已清除`);
+  showToast('✅ 訂單已儲存');
 }
 
-function clearOrder() {
-  if (!state.selectedDate || !state.selectedStudent) return;
-  state.currentOrder = {};
-  renderMenuItems();
-  showToast('已清除，記得按儲存訂單以確認。');
+function clearOrder() { state.currentOrder = {}; renderMenuItems(); showToast('已清除，請按儲存確認。'); }
+
+// ════════════════════════════════════════
+//  小工具
+// ════════════════════════════════════════
+const STATUS_LABEL = { unpaid: '待付款', paid: '已付款', canceled: '取消' };
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+function escapeAttr(s) { return escapeHtml(s); }
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function csvCell(v) {
+  const s = String(v);
+  if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+function downloadFile(filename, content, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // ════════════════════════════════════════
-//  STATS PAGE
+//  統計頁：每日訂單／品項統計／區間帳單
 // ════════════════════════════════════════
 let currentStatsTab = 'daily';
 
 function switchStatsTab(tab) {
+  if (tab === 'items' && !state.adminUnlocked) return;
   currentStatsTab = tab;
   ['daily','items','billing'].forEach(t => {
     document.getElementById('stab-' + t).classList.toggle('active', t === tab);
@@ -863,497 +820,437 @@ function switchStatsTab(tab) {
   renderStats();
 }
 
-async function renderStats() {
-  const data = await getData();
-  const weekDays = ['日','一','二','三','四','五','六'];
+function updateItemsTabVisibility() {
+  const btn = document.getElementById('stab-items');
+  if (btn) btn.style.display = state.adminUnlocked ? '' : 'none';
+}
 
-  // 更新學生下拉（每日 & 帳單 tab 各自）
-  ['stats-student','billing-student'].forEach(id => {
+async function initStatsDefaults() {
+  const data = await getData();
+  const dates = Object.keys(data.menus || {}).sort();
+  const today = todayStr();
+  const defaultDate = dates.find(d => d >= today) || dates[dates.length-1] || today;
+  const filterDate = document.getElementById('filter-date');
+  if (filterDate && !filterDate.value) filterDate.value = defaultDate;
+}
+
+function populateStudentSelects(data) {
+  ['stats-student', 'billing-student'].forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
-    const cur = sel.value;
-    sel.innerHTML = '<option value="">全部</option>';
-    data.students.forEach(s => {
-      const o = document.createElement('option');
-      o.value = s; o.textContent = s;
-      if (s === cur) o.selected = true;
-      sel.appendChild(o);
-    });
+    const current = sel.value;
+    sel.innerHTML = '<option value="">全部</option>' +
+      (data.students || []).map(s => `<option value="${escapeAttr(s)}">${escapeHtml(s)}</option>`).join('');
+    if ((data.students || []).includes(current)) sel.value = current;
   });
+}
 
+async function renderStats() {
+  const data = await getData();
+  populateStudentSelects(data);
+  updateItemsTabVisibility();
+
+  if (currentStatsTab === 'items' && !state.adminUnlocked) {
+    currentStatsTab = 'daily';
+    ['daily','items','billing'].forEach(t => {
+      document.getElementById('stab-' + t).classList.toggle('active', t === 'daily');
+      document.getElementById('filter-' + t).style.display = t === 'daily' ? '' : 'none';
+    });
+  }
+
+  const weekDays = ['日','一','二','三','四','五','六'];
   const container = document.getElementById('stats-content');
   container.innerHTML = '';
 
-  // ── Tab 1：每日訂單（單日篩選）──
-  if (currentStatsTab === 'daily') {
-    const dateFilter    = document.getElementById('filter-date').value;
-    const studentFilter = document.getElementById('stats-student').value;
-
-    // 取得所有有訂單的日期，供提示用
-    const allDates = Object.keys(data.orders).sort();
-
-    if (!dateFilter) {
-      container.innerHTML = `<div class="empty"><div class="icon">📅</div>請選擇日期查看當日訂單</div>`;
-      // 顯示有資料的日期快捷
-      if (allDates.length) {
-        const hints = document.createElement('div');
-        hints.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:8px';
-        allDates.forEach(d => {
-          const [,m,day] = d.split('-');
-          const btn = document.createElement('button');
-          btn.className = 'date-btn';
-          btn.textContent = `${parseInt(m)}/${parseInt(day)}`;
-          btn.onclick = () => { document.getElementById('filter-date').value = d; renderStats(); };
-          hints.appendChild(btn);
-        });
-        container.appendChild(hints);
-      }
-      return;
-    }
-
-    const dayOrders = data.orders[dateFilter] || {};
-    const dateObj = new Date(dateFilter + 'T00:00:00');
-    const [,m,d] = dateFilter.split('-');
-    const label = `${parseInt(m)}月${parseInt(d)}日（週${weekDays[dateObj.getDay()]}）`;
-
-    // 過濾學生
-    const filtered = Object.entries(dayOrders)
-      .filter(([s]) => !studentFilter || s === studentFilter);
-
-    if (filtered.length === 0) {
-      container.innerHTML = `<div class="empty"><div class="icon">📭</div>${label} 無訂單資料</div>`;
-      return;
-    }
-
-    // 日期大標
-    const heading = document.createElement('div');
-    heading.innerHTML = `<div style="font-weight:900;font-size:1.05rem;color:var(--accent);margin-bottom:10px">${label}</div>`;
-    container.appendChild(heading);
-
-    // 品項訂購總數（給商家用）
-    const itemTotals = {};
-    let dayTotal = 0;
-    filtered.forEach(([, items]) => items.forEach(i => {
-      itemTotals[i.name] = (itemTotals[i.name] || 0) + i.qty;
-      dayTotal += i.price * i.qty;
-    }));
-
-    const itemCard = document.createElement('div');
-    itemCard.className = 'card';
-    itemCard.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div class="card-title" style="margin:0">📦 品項訂購總數量</div>
-        <span class="badge badge-green">當日合計 NT$${dayTotal}</span>
-      </div>`;
-    const tblItem = document.createElement('table');
-    tblItem.className = 'stats-table';
-    tblItem.innerHTML = `<thead><tr><th>品項名稱</th><th style="text-align:center">訂購數量</th></tr></thead>`;
-    const tbodyItem = document.createElement('tbody');
-    Object.entries(itemTotals).forEach(([name, qty]) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${name}</td><td style="text-align:center"><span class="badge badge-orange" style="font-size:0.95rem">${qty} 份</span></td>`;
-      tbodyItem.appendChild(tr);
-    });
-    tblItem.appendChild(tbodyItem);
-    itemCard.appendChild(tblItem);
-    container.appendChild(itemCard);
-
-    // 學生明細
-    const detailCard = document.createElement('div');
-    detailCard.className = 'card';
-    detailCard.innerHTML = `<div class="card-title">👦 學生訂單明細</div>`;
-    const tbl = document.createElement('table');
-    tbl.className = 'stats-table';
-    tbl.innerHTML = `<thead><tr><th>學生</th><th>品項</th><th>金額</th></tr></thead>`;
-    const tbody = document.createElement('tbody');
-    filtered.forEach(([student, items]) => {
-      const total = items.reduce((s,i) => s + i.price*i.qty, 0);
-      const itemStr = items.map(i=>`${i.name}×${i.qty}`).join('、');
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td style="white-space:nowrap">${student}</td><td style="font-size:0.8rem">${itemStr}</td><td style="white-space:nowrap">NT$${total}</td>`;
-      tbody.appendChild(tr);
-    });
-    tbl.appendChild(tbody);
-    detailCard.appendChild(tbl);
-    container.appendChild(detailCard);
-  }
-
-  // ── Tab 2：品項統計（日期區間）──
-  else if (currentStatsTab === 'items') {
-    const from = document.getElementById('filter-from').value;
-    const to   = document.getElementById('filter-to').value;
-
-    const itemByDay = {}; // { date: { itemName: qty } }
-    const itemGrand = {}; // { itemName: totalQty }
-
-    Object.entries(data.orders)
-      .sort(([a],[b]) => a.localeCompare(b))
-      .forEach(([date, dayOrders]) => {
-        if (from && date < from) return;
-        if (to   && date > to)   return;
-        Object.values(dayOrders).forEach(items => {
-          items.forEach(i => {
-            if (!itemByDay[date]) itemByDay[date] = {};
-            itemByDay[date][i.name] = (itemByDay[date][i.name] || 0) + i.qty;
-            itemGrand[i.name] = (itemGrand[i.name] || 0) + i.qty;
-          });
-        });
-      });
-
-    if (Object.keys(itemGrand).length === 0) {
-      container.innerHTML = `<div class="empty"><div class="icon">📭</div>此區間無資料</div>`;
-      return;
-    }
-
-    // 總計卡
-    const grandCard = document.createElement('div');
-    grandCard.className = 'card';
-    grandCard.innerHTML = `<div class="card-title">📊 區間品項總計${from||to ? `（${from||'起'}～${to||'迄'}）` : '（全部）'}</div>`;
-    const tG = document.createElement('table');
-    tG.className = 'stats-table';
-    tG.innerHTML = `<thead><tr><th>品項名稱</th><th style="text-align:center">總數量</th></tr></thead>`;
-    const tbG = document.createElement('tbody');
-    Object.entries(itemGrand).sort((a,b)=>b[1]-a[1]).forEach(([name,qty]) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${name}</td><td style="text-align:center"><span class="badge badge-orange" style="font-size:0.95rem">${qty} 份</span></td>`;
-      tbG.appendChild(tr);
-    });
-    tG.appendChild(tbG);
-    grandCard.appendChild(tG);
-    container.appendChild(grandCard);
-
-    // 每日細項
-    Object.entries(itemByDay).forEach(([date, items]) => {
-      const [,m,d] = date.split('-');
-      const dObj = new Date(date+'T00:00:00');
-      const label = `${parseInt(m)}/${parseInt(d)}（週${weekDays[dObj.getDay()]}）`;
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML = `<div style="font-weight:900;font-size:0.95rem;color:var(--accent);margin-bottom:8px">${label}</div>`;
-      const flex = document.createElement('div');
-      flex.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px';
-      Object.entries(items).forEach(([name,qty]) => {
-        const tag = document.createElement('span');
-        tag.className = 'badge badge-orange';
-        tag.style.fontSize = '0.88rem';
-        tag.textContent = `${name} × ${qty}`;
-        flex.appendChild(tag);
-      });
-      card.appendChild(flex);
-      container.appendChild(card);
-    });
-  }
-
-  // ── Tab 3：月份帳單（per student）──
-  else if (currentStatsTab === 'billing') {
-    const month   = document.getElementById('billing-month').value;
-    const student = document.getElementById('billing-student').value;
-
-    // studentBill: { name: { total, days: [{date,items,subtotal}] } }
-    const studentBill = {};
-
-    Object.entries(data.orders)
-      .sort(([a],[b]) => a.localeCompare(b))
-      .forEach(([date, dayOrders]) => {
-        const [,m] = date.split('-');
-        if (month && parseInt(m) !== parseInt(month)) return;
-        Object.entries(dayOrders).forEach(([s, items]) => {
-          if (student && s !== student) return;
-          if (!studentBill[s]) studentBill[s] = { total: 0, days: [] };
-          const subtotal = items.reduce((acc,i) => acc + i.price*i.qty, 0);
-          studentBill[s].total += subtotal;
-          studentBill[s].days.push({ date, items, subtotal });
-        });
-      });
-
-    if (Object.keys(studentBill).length === 0) {
-      container.innerHTML = `<div class="empty"><div class="icon">📭</div>此月份無資料</div>`;
-      return;
-    }
-
-    // 月份總計列
-    const grandTotal = Object.values(studentBill).reduce((s,b)=>s+b.total,0);
-    const sumDiv = document.createElement('div');
-    sumDiv.innerHTML = `
-      <div style="display:flex;gap:10px;margin-bottom:14px">
-        <div class="summary-bar" style="flex:1"><span class="label">${month}月 應收總額</span><span class="value">NT$${grandTotal}</span></div>
-      </div>`;
-    container.appendChild(sumDiv);
-
-    // 每位學生一張卡
-    Object.entries(studentBill)
-      .sort((a,b) => b[1].total - a[1].total)
-      .forEach(([name, bill]) => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <div style="font-weight:900;font-size:1rem">${name}</div>
-            <span class="badge badge-green" style="font-size:0.95rem">NT$${bill.total}</span>
-          </div>`;
-        const tbl = document.createElement('table');
-        tbl.className = 'stats-table';
-        tbl.innerHTML = `<thead><tr><th>日期</th><th>品項</th><th>小計</th></tr></thead>`;
-        const tbody = document.createElement('tbody');
-        bill.days.forEach(day => {
-          const [,m,d] = day.date.split('-');
-          const dObj = new Date(day.date+'T00:00:00');
-          const dateStr = `${parseInt(m)}/${parseInt(d)}（${weekDays[dObj.getDay()]}）`;
-          const itemStr = day.items.map(i=>`${i.name}×${i.qty}`).join('、');
-          const tr = document.createElement('tr');
-          tr.innerHTML = `<td style="white-space:nowrap;font-size:0.82rem">${dateStr}</td><td style="font-size:0.8rem">${itemStr}</td><td style="white-space:nowrap">NT$${day.subtotal}</td>`;
-          tbody.appendChild(tr);
-        });
-        // 合計列
-        const trTotal = document.createElement('tr');
-        trTotal.innerHTML = `<td colspan="2" style="font-weight:700;text-align:right">合計</td><td style="font-weight:900;color:var(--accent)">NT$${bill.total}</td>`;
-        tbody.appendChild(trTotal);
-        tbl.appendChild(tbody);
-        card.appendChild(tbl);
-        container.appendChild(card);
-      });
-  }
+  if (currentStatsTab === 'daily') renderDailyStats(data, weekDays, container);
+  else if (currentStatsTab === 'items') renderItemsStats(data, container);
+  else if (currentStatsTab === 'billing') renderBillingStats(data, container);
 }
 
-async function exportCSV() {
-  const data = await getData();
-  const rows = [['日期','星期','學生','品項','數量','單價','小計']];
-  const weekDays = ['日','一','二','三','四','五','六'];
-  Object.entries(data.orders)
-    .sort(([a],[b]) => a.localeCompare(b))
-    .forEach(([date, dayOrders]) => {
-      const dateObj = new Date(date + 'T00:00:00');
-      const weekDay = weekDays[dateObj.getDay()];
-      Object.entries(dayOrders).forEach(([student, items]) => {
-        items.forEach(item => {
-          rows.push([date, weekDay, student, item.name, item.qty, item.price, item.price * item.qty]);
-        });
+function renderDailyStats(data, weekDays, container) {
+  const date = document.getElementById('filter-date').value;
+  const studentFilter = document.getElementById('stats-student').value;
+  if (!date) {
+    container.innerHTML = '<div class="empty"><div class="icon">📋</div>請選擇日期查看當天訂單。</div>';
+    return;
+  }
+  const dayOrders = (data.orders || {})[date] || {};
+  const entries = Object.entries(dayOrders).filter(([s]) => !studentFilter || s === studentFilter);
+  if (entries.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="icon">📭</div>這天還沒有任何訂單。</div>';
+    return;
+  }
+
+  const itemAgg = {};
+  let dayTotal = 0;
+  entries.forEach(([, items]) => {
+    items.forEach(it => {
+      if (!itemAgg[it.name]) itemAgg[it.name] = { qty: 0 };
+      itemAgg[it.name].qty += it.qty;
+      dayTotal += it.price * it.qty;
+    });
+  });
+
+  let html = `<div class="summary-bar"><span class="label">當日總額</span><span class="value">NT$${dayTotal}</span></div>`;
+  html += `<div class="card"><div class="card-title">品項加總（出餐核對用）</div><table class="stats-table"><thead><tr><th>品項</th><th>數量</th></tr></thead><tbody>`;
+  Object.entries(itemAgg).forEach(([name, info]) => {
+    html += `<tr><td>${escapeHtml(name)}</td><td>${info.qty}</td></tr>`;
+  });
+  html += `</tbody></table></div>`;
+
+  html += `<div class="card"><div class="card-title">每位學生明細</div><table class="stats-table"><thead><tr><th>學生</th><th>品項</th><th>小計</th></tr></thead><tbody>`;
+  entries.forEach(([student, items]) => {
+    const subtotal = items.reduce((acc,i) => acc + i.price*i.qty, 0);
+    html += `<tr><td>${escapeHtml(student)}</td><td>${items.map(i=>escapeHtml(i.name)+'×'+i.qty).join('、')}</td><td>NT$${subtotal}</td></tr>`;
+  });
+  html += `</tbody></table></div>`;
+  container.innerHTML = html;
+}
+
+function renderItemsStats(data, container) {
+  const from = document.getElementById('filter-from').value;
+  const to = document.getElementById('filter-to').value;
+  const itemAgg = {};
+  let grandTotal = 0;
+  Object.keys(data.orders || {}).forEach(date => {
+    if ((from && date < from) || (to && date > to)) return;
+    Object.values(data.orders[date]).forEach(items => {
+      items.forEach(it => {
+        if (!itemAgg[it.name]) itemAgg[it.name] = { qty: 0, total: 0 };
+        itemAgg[it.name].qty += it.qty;
+        itemAgg[it.name].total += it.price * it.qty;
+        grandTotal += it.price * it.qty;
       });
     });
-  // UTF-8 BOM 讓 Excel 正確顯示中文
-  const BOM = '\uFEFF';
-  const csv = BOM + rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'bento_orders.csv';
-  a.click();
-  URL.revokeObjectURL(url);
+  });
+  const names = Object.keys(itemAgg);
+  if (names.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="icon">🍱</div>這個區間內沒有任何訂單。</div>';
+    return;
+  }
+  let html = `<div class="summary-bar"><span class="label">區間總營業額</span><span class="value">NT$${grandTotal}</span></div>`;
+  html += `<div class="card"><table class="stats-table"><thead><tr><th>品項</th><th>數量</th><th>小計</th></tr></thead><tbody>`;
+  names.forEach(name => {
+    const a = itemAgg[name];
+    html += `<tr><td>${escapeHtml(name)}</td><td>${a.qty}</td><td>NT$${a.total}</td></tr>`;
+  });
+  html += `</tbody></table></div>`;
+  container.innerHTML = html;
+}
+
+function renderBillingStats(data, container) {
+  const from = document.getElementById('billing-from').value;
+  const to = document.getElementById('billing-to').value;
+  const studentFilter = document.getElementById('billing-student').value;
+  const studentBill = {};
+
+  Object.entries(data.orders || {}).sort().forEach(([date, dayOrders]) => {
+    if ((from && date < from) || (to && date > to)) return;
+    Object.entries(dayOrders).forEach(([s, items]) => {
+      if (studentFilter && s !== studentFilter) return;
+      if (!studentBill[s]) studentBill[s] = { unpaidTotal: 0, paidTotal: 0, canceledTotal: 0, days: [] };
+      const pStatus = ((data.payments || {})[date] || {})[s] || 'unpaid';
+      const rawSubtotal = items.reduce((acc,i) => acc + i.price*i.qty, 0);
+      const displaySubtotal = pStatus === 'canceled' ? 0 : rawSubtotal;
+
+      if (pStatus === 'unpaid') studentBill[s].unpaidTotal += rawSubtotal;
+      else if (pStatus === 'paid') studentBill[s].paidTotal += rawSubtotal;
+      else if (pStatus === 'canceled') studentBill[s].canceledTotal += rawSubtotal;
+
+      studentBill[s].days.push({ date, items, displaySubtotal, status: pStatus });
+    });
+  });
+
+  const names = Object.keys(studentBill);
+  if (names.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="icon">💰</div>這個區間內沒有任何訂單。</div>';
+    return;
+  }
+
+  let html = '';
+  names.forEach(name => {
+    const bill = studentBill[name];
+    html += `<div class="card"><div style="font-weight:900">${escapeHtml(name)} - 待付款合計 NT$${bill.unpaidTotal}</div>`;
+    html += `<div style="font-size:0.78rem;color:var(--text-muted);margin:2px 0 10px;">已付款 NT$${bill.paidTotal}　已取消 NT$${bill.canceledTotal}</div>`;
+    html += `<table class="stats-table"><thead><tr><th>日期</th><th>品項</th><th>小計</th><th>狀態</th></tr></thead><tbody>`;
+    bill.days.forEach(day => {
+      const pStatus = day.status;
+      let statusHtml;
+      if (state.adminUnlocked) {
+        statusHtml = `<select class="status-select ${pStatus}" onchange="updatePayment('${day.date}','${escapeAttr(name)}',this.value)">
+          <option value="unpaid" ${pStatus==='unpaid'?'selected':''}>待付款</option>
+          <option value="paid" ${pStatus==='paid'?'selected':''}>已付款</option>
+          <option value="canceled" ${pStatus==='canceled'?'selected':''}>取消</option>
+        </select>`;
+      } else {
+        const badgeClass = pStatus === 'paid' ? 'badge-green' : pStatus === 'canceled' ? 'badge-red' : 'badge-gray';
+        statusHtml = `<span class="badge ${badgeClass}">${STATUS_LABEL[pStatus] || '待付款'}</span>`;
+      }
+      html += `<tr><td>${day.date}</td><td>${day.items.map(i=>escapeHtml(i.name)+'(NT$'+i.price+')×'+i.qty).join('、')}</td><td>NT$${day.displaySubtotal}</td><td>${statusHtml}</td></tr>`;
+    });
+    html += `</tbody></table></div>`;
+  });
+  container.innerHTML = html;
+}
+
+async function updatePayment(date, student, status) {
+  if (!state.adminUnlocked) { showToast('❌ 沒有權限變更狀態'); return; }
+  const data = await getData();
+  if (!data.payments) data.payments = {};
+  if (!data.payments[date]) data.payments[date] = {};
+  data.payments[date][student] = status;
+  await saveData(data);
+  showToast('✅ 狀態已更新');
+  renderStats();
+}
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ════════════════════════════════════════
+//  匯出 / 匯入
+// ════════════════════════════════════════
+async function exportCSV() {
+  const data = await getData();
+  const weekDays = ['日','一','二','三','四','五','六'];
+  const rows = [['日期','星期','學生','品項','單價','數量','小計','狀態']];
+  Object.keys(data.orders || {}).sort().forEach(date => {
+    const wd = weekDays[new Date(date + 'T00:00:00').getDay()];
+    Object.entries(data.orders[date]).forEach(([student, items]) => {
+      const status = ((data.payments || {})[date] || {})[student] || 'unpaid';
+      const statusLabel = STATUS_LABEL[status] || '待付款';
+      if (items.length === 0) {
+        rows.push([date, wd, student, '', '', '', '', statusLabel]);
+      } else {
+        items.forEach(it => {
+          rows.push([date, wd, student, it.name, it.price, it.qty, it.price*it.qty, statusLabel]);
+        });
+      }
+    });
+  });
+  const csv = '\uFEFF' + rows.map(r => r.map(csvCell).join(',')).join('\n');
+  downloadFile(`福林64訂購明細_${todayStr()}.csv`, csv, 'text/csv;charset=utf-8;');
 }
 
 async function exportJSON() {
   const data = await getData();
-  downloadFile('bento_backup.json', JSON.stringify(data, null, 2), 'application/json');
-}
-
-function downloadFile(name, content, type) {
-  const a = document.createElement('a');
-  a.href = 'data:' + type + ',' + encodeURIComponent(content);
-  a.download = name;
-  a.click();
-}
-
-// ════════════════════════════════════════
-//  ADMIN PAGE
-// ════════════════════════════════════════
-async function renderAdminPage() {
-  if (!state.adminUnlocked) return;
-  await renderStudentListEdit();
-  await renderAdminMenuItems();
-}
-
-async function unlockAdmin() {
-  const data = await getData();
-  const pw = document.getElementById('admin-pw-input').value;
-  if (pw === data.password) {
-    state.adminUnlocked = true;
-    document.getElementById('admin-locked').style.display = 'none';
-    document.getElementById('admin-unlocked').style.display = 'block';
-    document.getElementById('mode-badge').textContent = '後台管理';
-    renderStudentListEdit();
-    // Set today's date
-    const today = new Date();
-    document.getElementById('admin-date').value = formatDate(today);
-    await renderAdminMenuItems();
-    document.getElementById('pw-error').textContent = '';
-  } else {
-    document.getElementById('pw-error').textContent = '密碼錯誤，請重試。';
-  }
-  document.getElementById('admin-pw-input').value = '';
-}
-
-function lockAdmin() {
-  state.adminUnlocked = false;
-  document.getElementById('admin-locked').style.display = 'block';
-  document.getElementById('admin-unlocked').style.display = 'none';
-  document.getElementById('mode-badge').textContent = '家長訂餐';
-}
-
-async function changePassword() {
-  const pw = document.getElementById('new-pw').value.trim();
-  if (!pw) return showToast('請輸入新密碼');
-  const data = await getData();
-  data.password = pw;
-  await saveData(data);
-  document.getElementById('new-pw').value = '';
-  showToast('✅ 密碼已更新');
-}
-
-async function renderStudentListEdit() {
-  const data = await getData();
-  const container = document.getElementById('student-list-edit');
-  container.innerHTML = '';
-  data.students.forEach((s, i) => {
-    const row = document.createElement('div');
-    row.className = 'menu-edit-row';
-    row.innerHTML = `
-      <input type="text" value="${s}" onchange="updateStudent(${i}, this.value)">
-      <button class="del-btn" onclick="removeStudent(${i})">✕</button>`;
-    container.appendChild(row);
-  });
-}
-
-async function updateStudent(i, val) {
-  const data = await getData();
-  data.students[i] = val;
-  await saveData(data);
-}
-
-async function removeStudent(i) {
-  const data = await getData();
-  data.students.splice(i, 1);
-  await saveData(data);
-  renderStudentListEdit();
-}
-
-async function addStudent() {
-  const inp = document.getElementById('new-student');
-  const name = inp.value.trim();
-  if (!name) return;
-  const data = await getData();
-  data.students.push(name);
-  await saveData(data);
-  inp.value = '';
-  renderStudentListEdit();
-  showToast(`✅ 已新增 ${name}`);
-}
-
-// Admin menu editor state
-let adminMenuDraft = [];
-
-async function renderAdminMenuItems() {
-  const dateInput = document.getElementById('admin-date');
-  const date = dateInput.value;
-  const data = await getData();
-  adminMenuDraft = (data.menus[date] || []).map(i => ({ ...i }));
-  drawAdminMenuItems();
-}
-
-function drawAdminMenuItems() {
-  const container = document.getElementById('admin-menu-items');
-  container.innerHTML = '';
-  adminMenuDraft.forEach((item, i) => {
-    const row = document.createElement('div');
-    row.className = 'menu-edit-row';
-    row.innerHTML = `
-      <input type="text" value="${item.name}" placeholder="品項名稱" onchange="adminMenuDraft[${i}].name=this.value">
-      <input type="number" class="price" value="${item.price}" placeholder="價格" min="0" onchange="adminMenuDraft[${i}].price=parseInt(this.value)||0">
-      <button class="del-btn" onclick="removeAdminMenuItem(${i})">✕</button>`;
-    container.appendChild(row);
-  });
-}
-
-function addMenuItem() {
-  adminMenuDraft.push({ name: '', price: 0 });
-  drawAdminMenuItems();
-}
-
-function removeAdminMenuItem(i) {
-  adminMenuDraft.splice(i, 1);
-  drawAdminMenuItems();
-}
-
-async function saveMenu() {
-  const date = document.getElementById('admin-date').value;
-  if (!date) return showToast('請先選擇日期');
-  const valid = adminMenuDraft.filter(i => i.name.trim());
-  const data = await getData();
-  if (valid.length === 0) {
-    delete data.menus[date];
-  } else {
-    data.menus[date] = valid;
-  }
-  await saveData(data);
-  showToast(`✅ ${date} 菜單已儲存（${valid.length} 項）`);
-  await renderDateGrid();
-}
-
-async function clearAllData() {
-  if (!confirm('確定要清除全部訂單資料嗎？此操作無法復原。')) return;
-  const data = await getData();
-  data.orders = {};
-  await saveData(data);
-  showToast('🗑 全部訂單已清除');
+  downloadFile(`福林64備份_${todayStr()}.json`, JSON.stringify(data, null, 2), 'application/json');
 }
 
 function importJSON() {
   document.getElementById('import-file').click();
 }
 
-async function handleImport(e) {
-  const file = e.target.files[0];
+async function handleImport(event) {
+  const file = event.target.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = async (ev) => {
-    try {
-      const imported = JSON.parse(ev.target.result);
-      if (imported.students && imported.menus && imported.orders) {
-        await saveData(imported);
-        _cache = imported;
-        showToast('✅ 備份匯入成功');
-        renderStudentListEdit();
-        renderAdminMenuItems();
-      } else {
-        showToast('❌ 檔案格式不正確');
-      }
-    } catch {
-      showToast('❌ 無法解析 JSON 檔案');
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    if (!parsed.orders || !parsed.menus || !parsed.students) {
+      showToast('❌ 檔案格式不正確');
+      event.target.value = '';
+      return;
     }
-  };
-  reader.readAsText(file);
-  e.target.value = '';
+    if (!confirm('此操作將覆蓋目前所有資料（學生名單、菜單、訂單、付款狀態），確定要匯入嗎？')) {
+      event.target.value = '';
+      return;
+    }
+    if (!parsed.deadlines) parsed.deadlines = {};
+    if (!parsed.payments) parsed.payments = {};
+    if (!parsed.password) parsed.password = _cache.password;
+    await saveData(parsed);
+    showToast('✅ 匯入成功');
+    await renderDateGrid();
+    await renderAdminPage();
+  } catch (e) {
+    showToast('❌ 匯入失敗，請確認檔案格式');
+  }
+  event.target.value = '';
+}
+
+const CLEAR_CONFIRM_PHRASE = '清除訂單';
+
+function showClearConfirm() {
+  document.getElementById('clear-confirm-box').style.display = 'block';
+  document.getElementById('clear-confirm-input').value = '';
+  document.getElementById('clear-confirm-btn').disabled = true;
+  document.getElementById('clear-trigger-btn').style.display = 'none';
+}
+
+function hideClearConfirm() {
+  document.getElementById('clear-confirm-box').style.display = 'none';
+  document.getElementById('clear-confirm-input').value = '';
+  document.getElementById('clear-confirm-btn').disabled = true;
+  document.getElementById('clear-trigger-btn').style.display = 'block';
+}
+
+function checkClearConfirmInput() {
+  const val = document.getElementById('clear-confirm-input').value.trim();
+  document.getElementById('clear-confirm-btn').disabled = (val !== CLEAR_CONFIRM_PHRASE);
+}
+
+async function clearAllData() {
+  const val = document.getElementById('clear-confirm-input').value.trim();
+  if (val !== CLEAR_CONFIRM_PHRASE) { showToast('❌ 請先輸入正確的確認文字'); return; }
+  const data = await getData();
+  data.orders = {};
+  data.payments = {};
+  await saveData(data);
+  hideClearConfirm();
+  showToast('✅ 已清除全部訂單資料');
+  await renderDateGrid();
 }
 
 // ════════════════════════════════════════
-//  UTILS
+//  後台管理：密碼 / 學生名單 / 菜單與截止時間
 // ════════════════════════════════════════
-function formatDate(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+function unlockAdmin() {
+  const pw = document.getElementById('admin-pw-input').value;
+  if (pw === _cache.password) {
+    state.adminUnlocked = true;
+    document.getElementById('pw-error').textContent = '';
+    document.getElementById('admin-pw-input').value = '';
+    renderAdminPage();
+  } else {
+    document.getElementById('pw-error').textContent = '密碼錯誤';
+  }
 }
 
-let toastTimer;
-function showToast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+function lockAdmin() {
+  state.adminUnlocked = false;
+  document.getElementById('admin-locked').style.display = 'block';
+  document.getElementById('admin-unlocked').style.display = 'none';
+  hideClearConfirm();
+  showToast('已離開後台');
 }
 
-// ════════════════════════════════════════
-//  INIT
-// ════════════════════════════════════════
+async function changePassword() {
+  const val = document.getElementById('new-pw').value;
+  if (!val || val.length < 4) { showToast('❌ 密碼至少需要 4 個字元'); return; }
+  const data = await getData();
+  data.password = val;
+  await saveData(data);
+  document.getElementById('new-pw').value = '';
+  showToast('✅ 密碼已更新');
+}
 
-// Invalidate cache when admin changes date (so menu reloads fresh)
-document.getElementById('admin-date').addEventListener('change', () => {
-  renderAdminMenuItems();
-});
+async function renderAdminPage() {
+  const data = await getData();
+  if (!state.adminUnlocked) {
+    document.getElementById('admin-locked').style.display = 'block';
+    document.getElementById('admin-unlocked').style.display = 'none';
+    return;
+  }
+  document.getElementById('admin-locked').style.display = 'none';
+  document.getElementById('admin-unlocked').style.display = 'block';
+
+  renderStudentListEdit(data);
+
+  const adminDateInput = document.getElementById('admin-date');
+  if (!adminDateInput.value) {
+    const dates = Object.keys(data.menus || {}).sort();
+    const today = todayStr();
+    adminDateInput.value = dates.find(d => d >= today) || dates[dates.length-1] || today;
+  }
+  adminDateInput.onchange = () => loadAdminMenuEditor(data);
+  await loadAdminMenuEditor(data);
+}
+
+function renderStudentListEdit(data) {
+  const el = document.getElementById('student-list-edit');
+  if (!data.students || data.students.length === 0) {
+    el.innerHTML = '<div class="empty" style="padding:10px 0"><div class="icon">🧑‍🎓</div>尚無學生，請於下方新增。</div>';
+    return;
+  }
+  el.innerHTML = data.students.map(s => `
+    <div class="menu-edit-row">
+      <input type="text" value="${escapeAttr(s)}" disabled>
+      <button class="del-btn" onclick="removeStudent('${escapeAttr(s)}')">✕</button>
+    </div>
+  `).join('');
+}
+
+async function addStudent() {
+  const input = document.getElementById('new-student');
+  const name = input.value.trim();
+  if (!name) return;
+  if (/\s/.test(name)) { showToast('❌ 姓名不能包含空白'); return; }
+  const data = await getData();
+  if (!data.students) data.students = [];
+  if (data.students.includes(name)) { showToast('❌ 已存在這個名字'); return; }
+  data.students.push(name);
+  await saveData(data);
+  input.value = '';
+  renderStudentListEdit(data);
+  showToast('✅ 已新增學生');
+}
+
+async function removeStudent(name) {
+  if (!confirm(`確定要將「${name}」從名單移除嗎？過去的訂單紀錄仍會保留在統計中。`)) return;
+  const data = await getData();
+  data.students = (data.students || []).filter(s => s !== name);
+  await saveData(data);
+  renderStudentListEdit(data);
+  showToast('✅ 已移除學生');
+}
+
+let adminMenuDraft = [];
+
+async function loadAdminMenuEditor(data) {
+  const dateKey = document.getElementById('admin-date').value;
+  if (!dateKey) return;
+  adminMenuDraft = (data.menus[dateKey] || []).map(it => ({ name: it.name, price: it.price }));
+  document.getElementById('admin-deadline').value = (data.deadlines || {})[dateKey] || '';
+  renderAdminMenuRows();
+}
+
+function renderAdminMenuRows() {
+  const el = document.getElementById('admin-menu-items');
+  if (adminMenuDraft.length === 0) {
+    el.innerHTML = '<div class="empty" style="padding:8px 0"><div class="icon">🍽️</div>尚未新增品項。</div>';
+    return;
+  }
+  el.innerHTML = adminMenuDraft.map((it, idx) => `
+    <div class="menu-edit-row">
+      <input type="text" value="${escapeAttr(it.name)}" placeholder="品項名稱" oninput="adminMenuDraft[${idx}].name=this.value">
+      <input type="number" class="price" value="${it.price}" placeholder="價格" oninput="adminMenuDraft[${idx}].price=parseInt(this.value)||0">
+      <button class="del-btn" onclick="removeMenuItem(${idx})">✕</button>
+    </div>
+  `).join('');
+}
+
+function addMenuItem() {
+  adminMenuDraft.push({ name: '', price: 0 });
+  renderAdminMenuRows();
+}
+
+function removeMenuItem(idx) {
+  adminMenuDraft.splice(idx, 1);
+  renderAdminMenuRows();
+}
+
+async function saveMenu() {
+  const dateKey = document.getElementById('admin-date').value;
+  if (!dateKey) { showToast('❌ 請先選擇日期'); return; }
+  const cleaned = adminMenuDraft.filter(it => it.name && it.name.trim()).map(it => ({ name: it.name.trim(), price: parseInt(it.price) || 0 }));
+  const data = await getData();
+  if (!data.menus) data.menus = {};
+  data.menus[dateKey] = cleaned;
+  if (!data.deadlines) data.deadlines = {};
+  const deadlineVal = document.getElementById('admin-deadline').value;
+  if (deadlineVal) data.deadlines[dateKey] = deadlineVal;
+  else delete data.deadlines[dateKey];
+  await saveData(data);
+  showToast('✅ 菜單已儲存');
+  await renderDateGrid();
+}
 
 renderDateGrid();
 </script>
+
 </body>
 </html>
