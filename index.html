@@ -130,6 +130,14 @@
   }
   .date-btn:hover { border-color: var(--accent-light); color: var(--accent); }
   .date-btn.active { background: var(--accent); border-color: var(--accent); color: #FFF; }
+  .date-btn.notopen {
+    background: var(--surface);
+    border-color: var(--accent-light);
+    color: var(--accent-light);
+  }
+  .date-btn.notopen:hover { border-color: var(--accent); color: var(--accent); }
+  .date-btn.notopen.active { background: var(--accent); border-color: var(--accent); color: #FFF; }
+
   .date-btn.expired {
     background: #F1F3F5;
     border-color: #E3E7EA;
@@ -446,6 +454,7 @@
     <div class="date-grid" id="date-grid"></div>
     <div style="margin-top:10px; display:flex; gap:14px; font-size:0.78rem; color:var(--text-muted); align-items:center; flex-wrap:wrap;">
       <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:50%;background:var(--surface);border:2px solid var(--border);display:inline-block;"></span>可訂購</span>
+      <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:50%;background:var(--surface);border:2px solid var(--accent-light);display:inline-block;"></span>🕒 尚未開放</span>
       <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:50%;background:#F1F3F5;border:2px solid #E3E7EA;display:inline-block;"></span>已截止訂購（仍可查看）</span>
       <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:50%;background:#F1F3F5;border:2px solid #E3E7EA;display:inline-block;"></span>🔒 已過日期</span>
     </div>
@@ -590,7 +599,10 @@
       <label class="field-label">選擇日期</label>
       <input type="date" id="admin-date">
 
-      <label class="field-label" style="margin-top:8px">截止訂購時間 (留空表示不限制)</label>
+      <label class="field-label" style="margin-top:8px">開放訂購時間 (留空表示立即開放)</label>
+      <input type="datetime-local" id="admin-open-time" style="margin-bottom:12px">
+
+      <label class="field-label">截止訂購時間 (留空表示不限制)</label>
       <input type="datetime-local" id="admin-deadline" style="margin-bottom:12px">
 
       <div class="section-header" style="margin-top:4px">
@@ -657,9 +669,10 @@ async function getData() {
     _cache = json.record;
   } catch (e) {
     showToast('❌ 無法連線');
-    _cache = { password: 'admin1234', students: [], menus: {}, orders: {}, deadlines: {}, payments: {} };
+    _cache = { password: 'admin1234', students: [], menus: {}, orders: {}, deadlines: {}, opens: {}, payments: {} };
   }
   if (!_cache.deadlines) _cache.deadlines = {};
+  if (!_cache.opens) _cache.opens = {};
   if (!_cache.payments) _cache.payments = {};
   hideLoading();
   return _cache;
@@ -702,7 +715,9 @@ async function renderDateGrid() {
     const [y, m, d] = key.split('-');
     const dateObj = new Date(key + 'T00:00:00');
     const deadlineStr = (data.deadlines || {})[key];
+    const openStr = (data.opens || {})[key];
     const isDeadlineExpired = !!(deadlineStr && now > new Date(deadlineStr));
+    const isNotYetOpen = !!(openStr && now < new Date(openStr));
     const isPastDate = key < today;
     const isLocked = isPastDate && !state.adminUnlocked;
 
@@ -711,8 +726,9 @@ async function renderDateGrid() {
     if (state.selectedDate === key) cls += ' active';
     if (isPastDate) cls += ' past';
     else if (isDeadlineExpired) cls += ' expired';
+    else if (isNotYetOpen) cls += ' notopen';
     btn.className = cls;
-    btn.textContent = `${parseInt(m)}/${parseInt(d)}(${weekDays[dateObj.getDay()]})` + (isPastDate ? ' 🔒' : '');
+    btn.textContent = `${parseInt(m)}/${parseInt(d)}(${weekDays[dateObj.getDay()]})` + (isPastDate ? ' 🔒' : isNotYetOpen ? ' 🕒' : '');
     if (isLocked) {
       btn.disabled = true;
     } else {
@@ -766,7 +782,10 @@ async function renderMenuItems() {
   const actionsContainer = document.getElementById('order-actions');
   container.innerHTML = '';
   const deadlineStr = (data.deadlines || {})[state.selectedDate];
-  const isPastDeadline = deadlineStr && new Date() > new Date(deadlineStr);
+  const openStr = (data.opens || {})[state.selectedDate];
+  const now = new Date();
+  const isPastDeadline = deadlineStr && now > new Date(deadlineStr);
+  const isBeforeOpen = openStr && now < new Date(openStr);
 
   menu.forEach(item => {
     const qty = state.currentOrder[item.name] || 0;
@@ -778,14 +797,18 @@ async function renderMenuItems() {
         <div class="menu-item-price">NT$${item.price}</div>
       </div>
       <div class="qty-control">
-        <button class="qty-btn" onclick="changeQty('${item.name}', -1)" ${isPastDeadline && !state.adminUnlocked ? 'disabled' : ''}>－</button>
+        <button class="qty-btn" onclick="changeQty('${item.name}', -1)" ${(isPastDeadline || isBeforeOpen) && !state.adminUnlocked ? 'disabled' : ''}>－</button>
         <span class="qty-num">${qty}</span>
-        <button class="qty-btn" onclick="changeQty('${item.name}', 1)" ${isPastDeadline && !state.adminUnlocked ? 'disabled' : ''}>＋</button>
+        <button class="qty-btn" onclick="changeQty('${item.name}', 1)" ${(isPastDeadline || isBeforeOpen) && !state.adminUnlocked ? 'disabled' : ''}>＋</button>
       </div>`;
     container.appendChild(row);
   });
 
-  if (isPastDeadline && !state.adminUnlocked) {
+  if (isBeforeOpen && !state.adminUnlocked) {
+    const openDate = new Date(openStr);
+    const openLabel = `${openDate.getMonth()+1}/${openDate.getDate()} ${String(openDate.getHours()).padStart(2,'0')}:${String(openDate.getMinutes()).padStart(2,'0')}`;
+    actionsContainer.innerHTML = `<div style="text-align:center;color:var(--accent);font-weight:bold;padding:10px;">🕒 尚未開放訂購，將於 ${openLabel} 開放。</div>`;
+  } else if (isPastDeadline && !state.adminUnlocked) {
     actionsContainer.innerHTML = '<div style="text-align:center;color:var(--red);font-weight:bold;padding:10px;">⏳ 已過期，無法修改。</div>';
   } else {
     actionsContainer.innerHTML = `<button class="btn btn-primary" onclick="saveOrder()">✅ 儲存訂單</button><button class="btn btn-danger" onclick="clearOrder()">🗑 清除訂單</button>`;
@@ -1096,6 +1119,7 @@ async function handleImport(event) {
       return;
     }
     if (!parsed.deadlines) parsed.deadlines = {};
+    if (!parsed.opens) parsed.opens = {};
     if (!parsed.payments) parsed.payments = {};
     if (!parsed.password) parsed.password = _cache.password;
     await saveData(parsed);
@@ -1240,6 +1264,7 @@ async function loadAdminMenuEditor(data) {
   const dateKey = document.getElementById('admin-date').value;
   if (!dateKey) return;
   adminMenuDraft = (data.menus[dateKey] || []).map(it => ({ name: it.name, price: it.price }));
+  document.getElementById('admin-open-time').value = (data.opens || {})[dateKey] || '';
   document.getElementById('admin-deadline').value = (data.deadlines || {})[dateKey] || '';
   renderAdminMenuRows();
 }
@@ -1280,6 +1305,12 @@ async function saveMenu() {
   const deadlineVal = document.getElementById('admin-deadline').value;
   if (deadlineVal) data.deadlines[dateKey] = deadlineVal;
   else delete data.deadlines[dateKey];
+
+  if (!data.opens) data.opens = {};
+  const openVal = document.getElementById('admin-open-time').value;
+  if (openVal) data.opens[dateKey] = openVal;
+  else delete data.opens[dateKey];
+
   await saveData(data);
   showToast('✅ 菜單已儲存');
   await renderDateGrid();
