@@ -599,11 +599,25 @@
       <label class="field-label">選擇日期</label>
       <input type="date" id="admin-date">
 
-      <label class="field-label" style="margin-top:8px">開放訂購時間 (留空表示立即開放，僅需設定到「時」)</label>
-      <input type="datetime-local" id="admin-open-time" step="3600" style="margin-bottom:12px">
+      <label class="field-label" style="margin-top:8px">開放訂購時間 (留空表示立即開放)</label>
+      <div class="field-row" style="margin-bottom:12px">
+        <div><input type="date" id="admin-open-date" style="margin-bottom:0"></div>
+        <div>
+          <select id="admin-open-hour" style="margin-bottom:0">
+            <option value="">不限制</option>
+          </select>
+        </div>
+      </div>
 
-      <label class="field-label">截止訂購時間 (留空表示不限制，僅需設定到「時」)</label>
-      <input type="datetime-local" id="admin-deadline" step="3600" style="margin-bottom:12px">
+      <label class="field-label">截止訂購時間 (留空表示不限制)</label>
+      <div class="field-row" style="margin-bottom:12px">
+        <div><input type="date" id="admin-deadline-date" style="margin-bottom:0"></div>
+        <div>
+          <select id="admin-deadline-hour" style="margin-bottom:0">
+            <option value="">不限制</option>
+          </select>
+        </div>
+      </div>
 
       <div class="section-header" style="margin-top:4px">
         <span style="font-size:0.85rem;color:var(--text-muted)">菜單品項</span>
@@ -845,13 +859,18 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 }
 function escapeAttr(s) { return escapeHtml(s); }
-function truncateToHour(dtLocalStr) {
-  if (!dtLocalStr) return '';
-  // dtLocalStr format: YYYY-MM-DDTHH:MM
-  const [datePart, timePart] = dtLocalStr.split('T');
-  if (!timePart) return dtLocalStr;
-  const hour = timePart.split(':')[0];
-  return `${datePart}T${hour}:00`;
+function populateHourSelects() {
+  ['admin-open-hour', 'admin-deadline-hour'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel || sel.dataset.filled) return;
+    for (let h = 0; h < 24; h++) {
+      const opt = document.createElement('option');
+      opt.value = String(h).padStart(2, '0');
+      opt.textContent = `${String(h).padStart(2, '0')} 時`;
+      sel.appendChild(opt);
+    }
+    sel.dataset.filled = '1';
+  });
 }
 
 function todayStr() {
@@ -1273,9 +1292,31 @@ async function loadAdminMenuEditor(data) {
   const dateKey = document.getElementById('admin-date').value;
   if (!dateKey) return;
   adminMenuDraft = (data.menus[dateKey] || []).map(it => ({ name: it.name, price: it.price }));
-  document.getElementById('admin-open-time').value = (data.opens || {})[dateKey] || '';
-  document.getElementById('admin-deadline').value = (data.deadlines || {})[dateKey] || '';
+  populateHourSelects();
+  setDateHourFields('admin-open-date', 'admin-open-hour', (data.opens || {})[dateKey], dateKey);
+  setDateHourFields('admin-deadline-date', 'admin-deadline-hour', (data.deadlines || {})[dateKey], dateKey);
   renderAdminMenuRows();
+}
+
+function setDateHourFields(dateInputId, hourSelectId, isoStr, fallbackDate) {
+  const dateInput = document.getElementById(dateInputId);
+  const hourSelect = document.getElementById(hourSelectId);
+  if (isoStr) {
+    const [datePart, timePart] = isoStr.split('T');
+    dateInput.value = datePart || fallbackDate || '';
+    hourSelect.value = timePart ? timePart.split(':')[0] : '';
+  } else {
+    dateInput.value = fallbackDate || '';
+    hourSelect.value = '';
+  }
+}
+
+function buildDateHourValue(dateInputId, hourSelectId) {
+  const dateVal = document.getElementById(dateInputId).value;
+  const hourVal = document.getElementById(hourSelectId).value;
+  if (!hourVal) return '';
+  if (!dateVal) return '';
+  return `${dateVal}T${hourVal}:00`;
 }
 
 function renderAdminMenuRows() {
@@ -1311,12 +1352,12 @@ async function saveMenu() {
   if (!data.menus) data.menus = {};
   data.menus[dateKey] = cleaned;
   if (!data.deadlines) data.deadlines = {};
-  const deadlineVal = truncateToHour(document.getElementById('admin-deadline').value);
+  const deadlineVal = buildDateHourValue('admin-deadline-date', 'admin-deadline-hour');
   if (deadlineVal) data.deadlines[dateKey] = deadlineVal;
   else delete data.deadlines[dateKey];
 
   if (!data.opens) data.opens = {};
-  const openVal = truncateToHour(document.getElementById('admin-open-time').value);
+  const openVal = buildDateHourValue('admin-open-date', 'admin-open-hour');
   if (openVal) data.opens[dateKey] = openVal;
   else delete data.opens[dateKey];
 
