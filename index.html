@@ -599,11 +599,11 @@
       <label class="field-label">選擇日期</label>
       <input type="date" id="admin-date">
 
-      <label class="field-label" style="margin-top:8px">開放訂購時間 (留空表示立即開放)</label>
-      <input type="datetime-local" id="admin-open-time" style="margin-bottom:12px">
+      <label class="field-label" style="margin-top:8px">開放訂購時間 (留空表示立即開放，僅需設定到「時」)</label>
+      <input type="datetime-local" id="admin-open-time" step="3600" style="margin-bottom:12px">
 
-      <label class="field-label">截止訂購時間 (留空表示不限制)</label>
-      <input type="datetime-local" id="admin-deadline" style="margin-bottom:12px">
+      <label class="field-label">截止訂購時間 (留空表示不限制，僅需設定到「時」)</label>
+      <input type="datetime-local" id="admin-deadline" step="3600" style="margin-bottom:12px">
 
       <div class="section-header" style="margin-top:4px">
         <span style="font-size:0.85rem;color:var(--text-muted)">菜單品項</span>
@@ -806,7 +806,7 @@ async function renderMenuItems() {
 
   if (isBeforeOpen && !state.adminUnlocked) {
     const openDate = new Date(openStr);
-    const openLabel = `${openDate.getMonth()+1}/${openDate.getDate()} ${String(openDate.getHours()).padStart(2,'0')}:${String(openDate.getMinutes()).padStart(2,'0')}`;
+    const openLabel = `${openDate.getMonth()+1}/${openDate.getDate()} ${String(openDate.getHours()).padStart(2,'0')}:00`;
     actionsContainer.innerHTML = `<div style="text-align:center;color:var(--accent);font-weight:bold;padding:10px;">🕒 尚未開放訂購，將於 ${openLabel} 開放。</div>`;
   } else if (isPastDeadline && !state.adminUnlocked) {
     actionsContainer.innerHTML = '<div style="text-align:center;color:var(--red);font-weight:bold;padding:10px;">⏳ 已過期，無法修改。</div>';
@@ -845,6 +845,15 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 }
 function escapeAttr(s) { return escapeHtml(s); }
+function truncateToHour(dtLocalStr) {
+  if (!dtLocalStr) return '';
+  // dtLocalStr format: YYYY-MM-DDTHH:MM
+  const [datePart, timePart] = dtLocalStr.split('T');
+  if (!timePart) return dtLocalStr;
+  const hour = timePart.split(':')[0];
+  return `${datePart}T${hour}:00`;
+}
+
 function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -1302,12 +1311,12 @@ async function saveMenu() {
   if (!data.menus) data.menus = {};
   data.menus[dateKey] = cleaned;
   if (!data.deadlines) data.deadlines = {};
-  const deadlineVal = document.getElementById('admin-deadline').value;
+  const deadlineVal = truncateToHour(document.getElementById('admin-deadline').value);
   if (deadlineVal) data.deadlines[dateKey] = deadlineVal;
   else delete data.deadlines[dateKey];
 
   if (!data.opens) data.opens = {};
-  const openVal = document.getElementById('admin-open-time').value;
+  const openVal = truncateToHour(document.getElementById('admin-open-time').value);
   if (openVal) data.opens[dateKey] = openVal;
   else delete data.opens[dateKey];
 
