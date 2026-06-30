@@ -130,6 +130,22 @@
   }
   .date-btn:hover { border-color: var(--accent-light); color: var(--accent); }
   .date-btn.active { background: var(--accent); border-color: var(--accent); color: #FFF; }
+  .date-btn.expired {
+    background: #F1F3F5;
+    border-color: #E3E7EA;
+    color: #B7C0C8;
+  }
+  .date-btn.expired:hover { border-color: var(--accent-light); color: var(--accent); }
+  .date-btn.expired.active { background: var(--accent); border-color: var(--accent); color: #FFF; }
+
+  .date-btn.past {
+    background: #F1F3F5;
+    border-color: #E3E7EA;
+    color: #B7C0C8;
+    cursor: not-allowed;
+  }
+  .date-btn.past:hover { border-color: #E3E7EA; color: #B7C0C8; }
+  .date-btn.past.active { background: #C7CDD2; border-color: #C7CDD2; color: #FFF; }
 
   /* ── Student selector ── */
   .student-grid {
@@ -428,6 +444,11 @@
   <div class="card">
     <div class="card-title">選擇日期</div>
     <div class="date-grid" id="date-grid"></div>
+    <div style="margin-top:10px; display:flex; gap:14px; font-size:0.78rem; color:var(--text-muted); align-items:center; flex-wrap:wrap;">
+      <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:50%;background:var(--surface);border:2px solid var(--border);display:inline-block;"></span>可訂購</span>
+      <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:50%;background:#F1F3F5;border:2px solid #E3E7EA;display:inline-block;"></span>已截止訂購（仍可查看）</span>
+      <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:50%;background:#F1F3F5;border:2px solid #E3E7EA;display:inline-block;"></span>🔒 已過日期</span>
+    </div>
   </div>
 
   <div class="card" id="student-card" style="display:none">
@@ -674,14 +695,29 @@ async function renderDateGrid() {
   grid.innerHTML = '';
   const dates = Object.keys(data.menus || {}).sort();
   const weekDays = ['日','一','二','三','四','五','六'];
+  const now = new Date();
+  const today = todayStr();
   dates.forEach(key => {
     if (!data.menus[key] || data.menus[key].length === 0) return;
     const [y, m, d] = key.split('-');
     const dateObj = new Date(key + 'T00:00:00');
+    const deadlineStr = (data.deadlines || {})[key];
+    const isDeadlineExpired = !!(deadlineStr && now > new Date(deadlineStr));
+    const isPastDate = key < today;
+    const isLocked = isPastDate && !state.adminUnlocked;
+
     const btn = document.createElement('button');
-    btn.className = 'date-btn' + (state.selectedDate === key ? ' active' : '');
-    btn.textContent = `${parseInt(m)}/${parseInt(d)}(${weekDays[dateObj.getDay()]})`;
-    btn.onclick = () => selectDate(key);
+    let cls = 'date-btn';
+    if (state.selectedDate === key) cls += ' active';
+    if (isPastDate) cls += ' past';
+    else if (isDeadlineExpired) cls += ' expired';
+    btn.className = cls;
+    btn.textContent = `${parseInt(m)}/${parseInt(d)}(${weekDays[dateObj.getDay()]})` + (isPastDate ? ' 🔒' : '');
+    if (isLocked) {
+      btn.disabled = true;
+    } else {
+      btn.onclick = () => selectDate(key);
+    }
     grid.appendChild(btn);
   });
 }
