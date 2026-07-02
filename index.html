@@ -456,7 +456,10 @@
 
 <header>
   <h1><span>🍱</span> 福林64餐點訂購系統</h1>
-  <span class="mode-badge" id="mode-badge">家長訂餐</span>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span id="last-sync" style="font-size:0.66rem;opacity:0.85;white-space:nowrap;"></span>
+    <span class="mode-badge" id="mode-badge">家長訂餐</span>
+  </div>
 </header>
 
 <nav>
@@ -468,7 +471,11 @@
 <!-- ── 訂餐頁 ── -->
 <div class="page active" id="page-order">
   <img src="https://i.ibb.co/YFRss0PM/bn.jpg" alt="首頁橫幅" style="width:100%; border-radius:12px; margin-bottom:16px; box-shadow: var(--shadow); display:block;">
-  
+
+  <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+    <button class="btn btn-secondary" style="width:auto;padding:6px 14px;font-size:0.8rem" onclick="manualRefresh()">🔄 重新整理最新資料</button>
+  </div>
+
   <div class="card">
     <div class="card-title">選擇日期</div>
     <div class="date-grid" id="date-grid"></div>
@@ -762,11 +769,17 @@ async function writeLatestData(data) {
   );
 }
 
+let _cacheTime = 0;
+const CACHE_TTL_MS = 5000; // 快取只有 5 秒有效，避免分頁開很久卻一直顯示舊資料
+
 async function getData(forceRefresh = false) {
-  if (_cache && !forceRefresh) return _cache;
+  const isFresh = _cache && (Date.now() - _cacheTime) < CACHE_TTL_MS;
+  if (isFresh && !forceRefresh) return _cache;
   showLoading('讀取資料中…');
   try {
     _cache = await fetchLatestData();
+    _cacheTime = Date.now();
+    updateLastSyncLabel();
   } catch (e) {
     console.error('getData failed:', e);
     showToast('❌ 讀取雲端失敗，已使用本機暫存資料');
@@ -775,6 +788,39 @@ async function getData(forceRefresh = false) {
     hideLoading();
   }
   return _cache;
+}
+
+function updateLastSyncLabel() {
+  const el = document.getElementById('last-sync');
+  if (!el) return;
+  const d = new Date();
+  el.textContent = `🔄 已同步 ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
+}
+
+// 分頁從背景切回前景時，強制重新抓一次最新資料，降低看到過期畫面的機率
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  getData(true).then(async () => {
+    const activePage = document.querySelector('.page.active');
+    if (!activePage) return;
+    if (activePage.id === 'page-order') {
+      await renderDateGrid();
+      if (state.selectedStudent) await renderMenuItems();
+      else if (state.selectedDate) await renderStudentGrid();
+    } else if (activePage.id === 'page-stats') {
+      await renderStats();
+    } else if (activePage.id === 'page-admin' && state.adminUnlocked) {
+      await renderAdminPage();
+    }
+  });
+});
+
+async function manualRefresh() {
+  await getData(true);
+  await renderDateGrid();
+  if (state.selectedDate) await renderStudentGrid();
+  if (state.selectedStudent) await renderMenuItems();
+  showToast('✅ 已更新為最新資料');
 }
 
 function getLogTimeStr() {
@@ -792,10 +838,18 @@ async function mutateData(modifierCallback) {
   showLoading('同步最新資料並儲存中…');
   try {
     const latestData = await fetchLatestData();
-    await modifierCallback(latestData);
+    // modifierCallback 若明確回傳 false，代表「內容其實沒有變化，不需要寫入」
+    // （例如新增重複的學生姓名），此時直接跳過寫入，避免白白多產生一筆雲端版本紀錄。
+    const result = await modifierCallback(latestData);
+    if (result === false) {
+      hideLoading();
+      return false;
+    }
     normalizeData(latestData);
     await writeLatestData(latestData);
     _cache = latestData;
+    _cacheTime = Date.now();
+    updateLastSyncLabel();
   } catch (e) {
     console.error('mutateData/save failed:', e);
     const msg = e && e.message ? e.message : '請重試或檢查網路';
@@ -948,13 +1002,13 @@ async function renderMenuItems() {
     row.className = 'menu-item';
     row.innerHTML = `
       <div class="menu-item-info">
-        <div class="menu-item-name">${item.name}</div>
+        <div class="menu-item-name">${escapeHtml(item.name)}</div>
         <div class="menu-item-price">NT$${item.price}</div>
       </div>
       <div class="qty-control">
-        <button class="qty-btn" onclick="changeQty('${item.name}', -1)" ${(isPastDeadline || isBeforeOpen) && !state.adminUnlocked ? 'disabled' : ''}>－</button>
+        <button class="qty-btn" onclick="changeQty('${escapeAttr(item.name)}', -1)" ${(isPastDeadline || isBeforeOpen) && !state.adminUnlocked ? 'disabled' : ''}>－</button>
         <span class="qty-num">${qty}</span>
-        <button class="qty-btn" onclick="changeQty('${item.name}', 1)" ${(isPastDeadline || isBeforeOpen) && !state.adminUnlocked ? 'disabled' : ''}>＋</button>
+        <button class="qty-btn" onclick="changeQty('${escapeAttr(item.name)}', 1)" ${(isPastDeadline || isBeforeOpen) && !state.adminUnlocked ? 'disabled' : ''}>＋</button>
       </div>`;
     container.appendChild(row);
   });
@@ -994,13 +1048,20 @@ function changeQty(name, delta) {
 }
 
 async function saveOrder() {
-  const menuItems = _cache.menus[state.selectedDate] || [];
-  const order = menuItems.filter(i => (state.currentOrder[i.name] || 0) > 0)
-                         .map(i => ({ name: i.name, price: i.price, qty: state.currentOrder[i.name] }));
-  
+  // 使用者畫面上目前勾選的品項與數量（名稱→數量），實際會用哪個品項/價格
+  // 要等 mutateData 抓到最新菜單後才能決定，避免用到過期的價格或已下架的品項。
+  const selectedQtyByName = { ...state.currentOrder };
+
   const success = await mutateData((latest) => {
+    // 一定要用剛從雲端抓下來的最新菜單，而不是外部可能過期的 _cache，
+    // 避免管理員同時改了價格/品項時，訂單記錄到舊資料。
+    const menuItems = latest.menus[state.selectedDate] || [];
+    const order = menuItems
+      .filter(i => (selectedQtyByName[i.name] || 0) > 0)
+      .map(i => ({ name: i.name, price: i.price, qty: selectedQtyByName[i.name] }));
+
     if (!latest.orders[state.selectedDate]) latest.orders[state.selectedDate] = {};
-    
+
     let actionText = '';
 
     // 如果訂單內容為空，代表執行清除
@@ -1514,10 +1575,10 @@ async function addStudent() {
   const success = await mutateData((latest) => {
     if (latest.students.includes(name)) {
       isDuplicate = true;
-    } else {
-      latest.students.push(name);
-      pushLog(latest, '管理員', `新增學生 (${name})`);
+      return false; // 沒有任何變化，通知 mutateData 不需要寫入雲端
     }
+    latest.students.push(name);
+    pushLog(latest, '管理員', `新增學生 (${name})`);
   });
 
   if (isDuplicate) { showToast('❌ 已存在這個名字'); return; }
