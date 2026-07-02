@@ -754,8 +754,7 @@ async function writeLatestData(data) {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        ...JSONBIN_HEADERS,
-        'X-Bin-Versioning': 'true'
+        ...JSONBIN_HEADERS
       },
       body: JSON.stringify(normalizeData(data))
     },
