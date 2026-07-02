@@ -153,7 +153,6 @@
   }
   .date-btn.past:hover { border-color: #E3E7EA; color: #B7C0C8; }
   .date-btn.past.active { background: #C7CDD2; border-color: #C7CDD2; color: #FFF; }
-  .date-btn.warning { border-color: var(--red); }
 
   /* ── Student selector ── */
   .student-grid {
@@ -466,6 +465,7 @@
   <button onclick="switchTab('admin')" id="admin-tab-btn">⚙️ 後台</button>
 </nav>
 
+<!-- ── 訂餐頁 ── -->
 <div class="page active" id="page-order">
   <img src="https://i.ibb.co/YFRss0PM/bn.jpg" alt="首頁橫幅" style="width:100%; border-radius:12px; margin-bottom:16px; box-shadow: var(--shadow); display:block;">
   
@@ -496,6 +496,7 @@
   </div>
 </div>
 
+<!-- ── 統計頁 ── -->
 <div class="page" id="page-stats">
   <div style="display:flex;gap:6px;margin-bottom:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px">
     <button class="stats-tab-btn active" id="stab-daily"    onclick="switchStatsTab('daily')">📋 每日訂單</button>
@@ -567,6 +568,7 @@
   </div>
 </div>
 
+<!-- ── 後台頁 ── -->
 <div class="page" id="page-admin">
   <div id="admin-locked">
     <div class="card">
@@ -582,6 +584,7 @@
 
   <div id="admin-unlocked" style="display:none">
 
+    <!-- 更改密碼 -->
     <div class="card">
       <div class="section-header">
         <h3>🔑 修改後台密碼</h3>
@@ -591,6 +594,7 @@
       <button class="btn btn-secondary" onclick="changePassword()">更新密碼</button>
     </div>
 
+    <!-- 學生名單 -->
     <div class="card">
       <div class="section-header">
         <h3>👦 學生名單</h3>
@@ -602,6 +606,7 @@
       </div>
     </div>
 
+    <!-- 每日菜單設定 -->
     <div class="card">
       <div class="section-header">
         <h3>🍱 設定每日菜單與期限</h3>
@@ -637,6 +642,7 @@
       <button class="btn btn-primary" style="margin-top:12px" onclick="saveMenu()">💾 儲存菜單設定</button>
     </div>
 
+    <!-- 危險區 -->
     <div class="card">
       <div class="card-title">危險操作</div>
       <button class="btn btn-danger" id="clear-trigger-btn" onclick="showClearConfirm()">⚠️ 清除全部訂單資料</button>
@@ -653,18 +659,21 @@
       <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
     </div>
 
+    <!-- 操作紀錄 -->
     <div class="card">
       <div class="section-header">
         <h3>📝 系統操作紀錄 (近 50 筆)</h3>
       </div>
       <div id="admin-logs-container" class="log-container">
-        </div>
+        <!-- 紀錄渲染處 -->
+      </div>
     </div>
     
     <button class="btn btn-secondary" style="margin-top:8px" onclick="lockAdmin()">🔒 離開後台</button>
   </div>
 </div>
 
+<!-- Toast -->
 <div id="toast"></div>
 
 <script>
@@ -711,7 +720,6 @@ async function getData() {
   return _cache;
 }
 
-// 寫入操作紀錄的輔助函數
 function getLogTimeStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
@@ -720,7 +728,7 @@ function getLogTimeStr() {
 function pushLog(latestData, user, action) {
   if (!latestData.logs) latestData.logs = [];
   latestData.logs.unshift({ time: getLogTimeStr(), user, action });
-  if (latestData.logs.length > 50) latestData.logs.pop(); // 最多保留50筆
+  if (latestData.logs.length > 50) latestData.logs.pop(); 
 }
 
 async function mutateData(modifierCallback) {
@@ -809,6 +817,7 @@ async function renderDateGrid() {
     const hasOrders = data.orders && data.orders[key] && Object.keys(data.orders[key]).length > 0;
     const hasMenu = data.menus[key] && data.menus[key].length > 0;
 
+    // 如果沒有菜單，且該日期的所有訂單也被清空了，就不再顯示這個日期按鈕
     if (!hasMenu && !hasOrders) return;
 
     const [y, m, d] = key.split('-');
@@ -826,11 +835,9 @@ async function renderDateGrid() {
     if (isPastDate) cls += ' past';
     else if (isDeadlineExpired) cls += ' expired';
     else if (isNotYetOpen) cls += ' notopen';
-    if (!hasMenu && hasOrders) cls += ' warning'; 
 
     btn.className = cls;
     let labelText = `${parseInt(m)}/${parseInt(d)}(${weekDays[dateObj.getDay()]})`;
-    if (!hasMenu && hasOrders) labelText += ' ⚠️'; 
     if (isPastDate) labelText += ' 🔒';
     else if (isNotYetOpen) labelText += ' 🕒';
     
@@ -890,7 +897,7 @@ async function renderMenuItems() {
   container.innerHTML = '';
   
   if (menu.length === 0) {
-    container.innerHTML = '<div style="color:var(--red); font-size:0.9rem; padding:10px 0;">⚠️ 此日期的菜單已被清空，但仍保留過往的訂購紀錄。</div>';
+    container.innerHTML = '<div style="color:var(--text-muted); font-size:0.9rem; padding:10px 0;">💡 提示：此日期的菜單已清空。若臨時決定不訂餐，請選擇有訂餐的學生並按下「🗑 清除此筆訂單」。當日所有訂單清空後，此日期會自動隱藏。</div>';
   }
 
   const deadlineStr = (data.deadlines || {})[state.selectedDate];
@@ -922,12 +929,27 @@ async function renderMenuItems() {
     actionsContainer.innerHTML = `<div style="text-align:center;color:var(--accent);font-weight:bold;padding:10px;">🕒 尚未開放訂購，將於 ${openLabel} 開放。</div>`;
   } else if (isPastDeadline && !state.adminUnlocked) {
     actionsContainer.innerHTML = '<div style="text-align:center;color:var(--red);font-weight:bold;padding:10px;">⏳ 已過期，無法修改。</div>';
-  } else if (menu.length > 0) {
-    actionsContainer.innerHTML = `<button class="btn btn-primary" onclick="saveOrder()">✅ 儲存訂單</button><button class="btn btn-danger" onclick="clearOrder()">🗑 清除此筆訂單</button>`;
   } else {
-      actionsContainer.innerHTML = '';
+    const hasExistingOrder = data.orders[state.selectedDate] && data.orders[state.selectedDate][state.selectedStudent];
+    let buttonsHtml = '';
+    
+    if (menu.length > 0) {
+      buttonsHtml += `<button class="btn btn-primary" onclick="saveOrder()">✅ 儲存訂單</button>`;
+    }
+    
+    // 無論有沒有菜單，只要該學生有舊訂單，或是正在操作菜單加減，都可以顯示清除按鈕
+    if (hasExistingOrder || Object.keys(state.currentOrder).length > 0) {
+      buttonsHtml += `<button class="btn btn-danger" onclick="clearOrder()">🗑 清除此筆訂單</button>`;
+    }
+    
+    actionsContainer.innerHTML = buttonsHtml;
   }
-  actionsContainer.style.display = 'block';
+  
+  if (actionsContainer.innerHTML.trim() !== '') {
+    actionsContainer.style.display = 'block';
+  } else {
+    actionsContainer.style.display = 'none';
+  }
 }
 
 function changeQty(name, delta) {
@@ -952,11 +974,18 @@ async function saveOrder() {
 
   if (success) {
     await renderStudentGrid();
+    await renderDateGrid();
+    await renderMenuItems();
     showToast('✅ 訂單已儲存');
   }
 }
 
-function clearOrder() { state.currentOrder = {}; renderMenuItems(); showToast('已清除，請按儲存確認。'); }
+async function clearOrder() { 
+  if (!confirm('確定要清除這位學生的此筆訂單嗎？')) return;
+  state.currentOrder = {}; 
+  // 直接呼叫儲存程序，讓清除動作一次到位，並重新整理畫面
+  await saveOrder(); 
+}
 
 // ════════════════════════════════════════
 //  小工具
@@ -1268,7 +1297,6 @@ async function handleImport(event) {
 
     const success = await mutateData((latest) => {
         const preservePassword = latest.password;
-        // 保留目前的操作紀錄陣列
         const preserveLogs = latest.logs || []; 
         Object.keys(latest).forEach(k => delete latest[k]); 
         Object.assign(latest, parsed); 
@@ -1278,7 +1306,6 @@ async function handleImport(event) {
         if (!latest.payments) latest.payments = {};
         if (!latest.password) latest.password = preservePassword;
         
-        // 恢復紀錄陣列，並加上此次匯入動作
         latest.logs = preserveLogs;
         pushLog(latest, '管理員', `匯入資料備份檔`);
     });
@@ -1397,7 +1424,6 @@ async function renderAdminPage() {
   await loadAdminMenuEditor(data);
 }
 
-// 渲染操作紀錄面板
 function renderLogsPanel(data) {
   const container = document.getElementById('admin-logs-container');
   if (!data.logs || data.logs.length === 0) {
@@ -1536,7 +1562,6 @@ async function saveMenu() {
   const openVal = buildDateHourValue('admin-open-date', 'admin-open-hour');
 
   const success = await mutateData((latest) => {
-    // 判斷是新增還是修改
     const isNew = !latest.menus[dateKey] || latest.menus[dateKey].length === 0;
     
     latest.menus[dateKey] = cleaned;
