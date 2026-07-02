@@ -687,6 +687,26 @@ const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 let _cache = null;
 const STATUS_LABEL = { unpaid: '待付款', paid: '已付款', canceled: '取消' };
 
+function defaultData() {
+  return { password: 'admin1234', students: [], menus: {}, orders: {}, deadlines: {}, opens: {}, payments: {}, logs: [] };
+}
+
+function normalizeData(raw) {
+  const data = (raw && typeof raw === 'object') ? raw : {};
+  const base = defaultData();
+
+  data.password = data.password || base.password;
+  data.students = Array.isArray(data.students) ? data.students : [];
+  data.menus = (data.menus && typeof data.menus === 'object') ? data.menus : {};
+  data.orders = (data.orders && typeof data.orders === 'object') ? data.orders : {};
+  data.deadlines = (data.deadlines && typeof data.deadlines === 'object') ? data.deadlines : {};
+  data.opens = (data.opens && typeof data.opens === 'object') ? data.opens : {};
+  data.payments = (data.payments && typeof data.payments === 'object') ? data.payments : {};
+  data.logs = Array.isArray(data.logs) ? data.logs : [];
+
+  return data;
+}
+
 function showLoading(msg = '載入中…') {
   let el = document.getElementById('loading-overlay');
   if (!el) {
@@ -701,22 +721,59 @@ function showLoading(msg = '載入中…') {
 }
 function hideLoading() { const el = document.getElementById('loading-overlay'); if (el) el.style.display = 'none'; }
 
-async function getData() {
-  if (_cache) return _cache;
+async function requestJsonBin(url, options = {}, actionName = 'JSONBin') {
+  const res = await fetch(url, { ...options, cache: 'no-store' });
+  const text = await res.text();
+  let payload = null;
+  try { payload = text ? JSON.parse(text) : null; } catch (e) { payload = { raw: text }; }
+
+  if (!res.ok) {
+    const detail = payload && (payload.message || payload.error || payload.raw || JSON.stringify(payload));
+    throw new Error(`${actionName}失敗，HTTP ${res.status}${detail ? '：' + String(detail).slice(0, 160) : ''}`);
+  }
+  return payload;
+}
+
+async function fetchLatestData() {
+  const json = await requestJsonBin(
+    BIN_URL + '/latest',
+    { headers: { 'X-Master-Key': API_KEY } },
+    '讀取雲端資料'
+  );
+  if (!json || !json.record || typeof json.record !== 'object') {
+    throw new Error('JSONBin 回傳格式異常，找不到 record 欄位');
+  }
+  return normalizeData(json.record);
+}
+
+async function writeLatestData(data) {
+  return await requestJsonBin(
+    BIN_URL,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': API_KEY,
+        'X-Bin-Versioning': 'true'
+      },
+      body: JSON.stringify(normalizeData(data))
+    },
+    '寫入雲端資料'
+  );
+}
+
+async function getData(forceRefresh = false) {
+  if (_cache && !forceRefresh) return _cache;
   showLoading('讀取資料中…');
   try {
-    const res = await fetch(BIN_URL + '/latest', { headers: { 'X-Master-Key': API_KEY } });
-    const json = await res.json();
-    _cache = json.record;
+    _cache = await fetchLatestData();
   } catch (e) {
-    showToast('❌ 無法連線');
-    _cache = { password: 'admin1234', students: [], menus: {}, orders: {}, deadlines: {}, opens: {}, payments: {}, logs: [] };
+    console.error('getData failed:', e);
+    showToast('❌ 讀取雲端失敗，已使用本機暫存資料');
+    _cache = normalizeData(_cache || defaultData());
+  } finally {
+    hideLoading();
   }
-  if (!_cache.deadlines) _cache.deadlines = {};
-  if (!_cache.opens) _cache.opens = {};
-  if (!_cache.payments) _cache.payments = {};
-  if (!_cache.logs) _cache.logs = [];
-  hideLoading();
   return _cache;
 }
 
@@ -734,40 +791,19 @@ function pushLog(latestData, user, action) {
 async function mutateData(modifierCallback) {
   showLoading('同步最新資料並儲存中…');
   try {
-    const res = await fetch(BIN_URL + '/latest', { headers: { 'X-Master-Key': API_KEY } });
-    if (!res.ok) throw new Error('Fetch failed');
-    const json = await res.json();
-    let latestData = json.record;
-
-    if (!latestData.deadlines) latestData.deadlines = {};
-    if (!latestData.opens) latestData.opens = {};
-    if (!latestData.payments) latestData.payments = {};
-    if (!latestData.orders) latestData.orders = {};
-    if (!latestData.menus) latestData.menus = {};
-    if (!latestData.students) latestData.students = [];
-    if (!latestData.logs) latestData.logs = [];
-
-    modifierCallback(latestData);
-
-    const putRes = await fetch(BIN_URL, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Master-Key': API_KEY,
-        'X-Bin-Versioning': 'true'
-      },
-      body: JSON.stringify(latestData)
-    });
-
-    if (!putRes.ok) throw new Error('Save failed');
-    _cache = latestData; 
+    const latestData = await fetchLatestData();
+    await modifierCallback(latestData);
+    normalizeData(latestData);
+    await writeLatestData(latestData);
+    _cache = latestData;
   } catch (e) {
-    showToast('❌ 儲存失敗，請重試或檢查網路');
-    console.error(e);
-    hideLoading();
+    console.error('mutateData/save failed:', e);
+    const msg = e && e.message ? e.message : '請重試或檢查網路';
+    showToast('❌ 儲存失敗：' + msg.slice(0, 90));
     return false;
+  } finally {
+    hideLoading();
   }
-  hideLoading();
   return true;
 }
 
