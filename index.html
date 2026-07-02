@@ -937,7 +937,6 @@ async function renderMenuItems() {
       buttonsHtml += `<button class="btn btn-primary" onclick="saveOrder()">✅ 儲存訂單</button>`;
     }
     
-    // 無論有沒有菜單，只要該學生有舊訂單，或是正在操作菜單加減，都可以顯示清除按鈕
     if (hasExistingOrder || Object.keys(state.currentOrder).length > 0) {
       buttonsHtml += `<button class="btn btn-danger" onclick="clearOrder()">🗑 清除此筆訂單</button>`;
     }
@@ -965,25 +964,40 @@ async function saveOrder() {
   
   const success = await mutateData((latest) => {
     if (!latest.orders[state.selectedDate]) latest.orders[state.selectedDate] = {};
+    
+    let actionText = '';
+
+    // 如果訂單內容為空，代表執行清除
     if (order.length === 0) {
       delete latest.orders[state.selectedDate][state.selectedStudent];
+      
+      // 若當天已無任何訂單，順便把當天日期從 orders 中移除，保持資料庫乾淨
+      if (Object.keys(latest.orders[state.selectedDate]).length === 0) {
+        delete latest.orders[state.selectedDate];
+      }
+      actionText = `清除訂單 (${state.selectedDate} - ${state.selectedStudent})`;
     } else {
       latest.orders[state.selectedDate][state.selectedStudent] = order;
+      actionText = `送出/修改訂單 (${state.selectedDate} - ${state.selectedStudent})`;
     }
+
+    // 加入訪客與家長操作紀錄
+    const userRole = state.adminUnlocked ? '管理員' : '家長/訪客';
+    pushLog(latest, userRole, actionText);
   });
 
   if (success) {
     await renderStudentGrid();
     await renderDateGrid();
     await renderMenuItems();
-    showToast('✅ 訂單已儲存');
+    showToast('✅ 訂單已更新');
   }
 }
 
 async function clearOrder() { 
   if (!confirm('確定要清除這位學生的此筆訂單嗎？')) return;
   state.currentOrder = {}; 
-  // 直接呼叫儲存程序，讓清除動作一次到位，並重新整理畫面
+  // 直接呼叫儲存程序，不僅清除訂單，也會順便寫入一筆新紀錄來確保雲端成功更新
   await saveOrder(); 
 }
 
