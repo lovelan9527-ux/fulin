@@ -683,6 +683,7 @@
 const BIN_ID  = '6a3c9dd1da38895dfefaee07';
 const API_KEY = '$2a$10$55F/iQF2W.CDsEmUZCEpc.undBT1zKpURc5DEXX79HfJQpM5Ds8RO';
 const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+const JSONBIN_HEADERS = { 'X-Access-Key': API_KEY };
 
 let _cache = null;
 const STATUS_LABEL = { unpaid: '待付款', paid: '已付款', canceled: '取消' };
@@ -737,7 +738,7 @@ async function requestJsonBin(url, options = {}, actionName = 'JSONBin') {
 async function fetchLatestData() {
   const json = await requestJsonBin(
     BIN_URL + '/latest',
-    { headers: { 'X-Master-Key': API_KEY } },
+    { headers: JSONBIN_HEADERS },
     '讀取雲端資料'
   );
   if (!json || !json.record || typeof json.record !== 'object') {
@@ -753,7 +754,7 @@ async function writeLatestData(data) {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'X-Master-Key': API_KEY,
+        ...JSONBIN_HEADERS,
         'X-Bin-Versioning': 'true'
       },
       body: JSON.stringify(normalizeData(data))
@@ -810,7 +811,7 @@ async function mutateData(modifierCallback) {
 async function autoBackup(actionName) {
   showToast(`正在下載${actionName}前備份...`);
   try {
-    const res = await fetch(BIN_URL + '/latest', { headers: { 'X-Master-Key': API_KEY } });
+    const res = await fetch(BIN_URL + '/latest', { headers: JSONBIN_HEADERS });
     const json = await res.json();
     downloadFile(`福林64_${actionName}前自動備份_${getPreciseTimeStr()}.json`, JSON.stringify(json.record, null, 2), 'application/json');
   } catch (e) {
