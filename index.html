@@ -3,12 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>福林64餐點訂購系統</title>
+<title>福林64餐點訂購系統 (安全防護與紀錄版)</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
 
   :root {
-    /* 柔和藍色系：降低飽和度與對比，適合長時間操作 */
     --bg: #F6F9FB;
     --surface: #FFFFFF;
     --surface2: #EEF3F7;
@@ -154,6 +153,7 @@
   }
   .date-btn.past:hover { border-color: #E3E7EA; color: #B7C0C8; }
   .date-btn.past.active { background: #C7CDD2; border-color: #C7CDD2; color: #FFF; }
+  .date-btn.warning { border-color: var(--red); }
 
   /* ── Student selector ── */
   .student-grid {
@@ -430,6 +430,27 @@
     flex-wrap: wrap;
   }
   .export-area .btn { flex: 1; min-width: 120px; }
+  
+  /* 操作紀錄滾動區 */
+  .log-container {
+    max-height: 250px;
+    overflow-y: auto;
+    font-size: 0.85rem;
+    background: var(--surface2);
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .log-item {
+    border-bottom: 1px solid var(--border);
+    padding: 6px 0;
+    display: flex;
+    gap: 10px;
+  }
+  .log-item:last-child { border-bottom: none; }
+  .log-time { color: var(--text-muted); min-width: 110px; flex-shrink: 0; }
+  .log-user { color: var(--accent); font-weight: bold; flex-shrink: 0; }
+  .log-action { color: var(--text); }
 </style>
 </head>
 <body>
@@ -445,7 +466,6 @@
   <button onclick="switchTab('admin')" id="admin-tab-btn">⚙️ 後台</button>
 </nav>
 
-<!-- ── 訂餐頁 ── -->
 <div class="page active" id="page-order">
   <img src="https://i.ibb.co/YFRss0PM/bn.jpg" alt="首頁橫幅" style="width:100%; border-radius:12px; margin-bottom:16px; box-shadow: var(--shadow); display:block;">
   
@@ -455,7 +475,7 @@
     <div style="margin-top:10px; display:flex; gap:14px; font-size:0.78rem; color:var(--text-muted); align-items:center; flex-wrap:wrap;">
       <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:50%;background:var(--surface);border:2px solid var(--border);display:inline-block;"></span>可訂購</span>
       <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:50%;background:var(--surface);border:2px solid var(--accent-light);display:inline-block;"></span>🕒 尚未開放</span>
-      <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:50%;background:#F1F3F5;border:2px solid #E3E7EA;display:inline-block;"></span>已截止訂購（仍可查看）</span>
+      <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:50%;background:#F1F3F5;border:2px solid #E3E7EA;display:inline-block;"></span>已截止訂購</span>
       <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:50%;background:#F1F3F5;border:2px solid #E3E7EA;display:inline-block;"></span>🔒 已過日期</span>
     </div>
   </div>
@@ -476,17 +496,13 @@
   </div>
 </div>
 
-<!-- ── 統計頁 ── -->
 <div class="page" id="page-stats">
-
-  <!-- 子分頁切換 -->
   <div style="display:flex;gap:6px;margin-bottom:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px">
     <button class="stats-tab-btn active" id="stab-daily"    onclick="switchStatsTab('daily')">📋 每日訂單</button>
     <button class="stats-tab-btn"        id="stab-items"    onclick="switchStatsTab('items')">🍱 品項統計</button>
     <button class="stats-tab-btn"        id="stab-billing"  onclick="switchStatsTab('billing')">💰 區間帳單</button>
   </div>
 
-  <!-- ── 每日訂單篩選 ── -->
   <div id="filter-daily">
     <div class="card" style="margin-bottom:10px">
       <div class="field-row" style="align-items:flex-end">
@@ -504,7 +520,6 @@
     </div>
   </div>
 
-  <!-- ── 品項統計篩選 ── -->
   <div id="filter-items" style="display:none">
     <div class="card" style="margin-bottom:10px">
       <div class="field-row" style="align-items:flex-end">
@@ -520,7 +535,6 @@
     </div>
   </div>
 
-  <!-- ── 區間帳單篩選 ── -->
   <div id="filter-billing" style="display:none">
     <div class="card" style="margin-bottom:10px">
       <div class="field-row" style="align-items:flex-end">
@@ -553,7 +567,6 @@
   </div>
 </div>
 
-<!-- ── 後台頁 ── -->
 <div class="page" id="page-admin">
   <div id="admin-locked">
     <div class="card">
@@ -569,7 +582,6 @@
 
   <div id="admin-unlocked" style="display:none">
 
-    <!-- 更改密碼 -->
     <div class="card">
       <div class="section-header">
         <h3>🔑 修改後台密碼</h3>
@@ -579,7 +591,6 @@
       <button class="btn btn-secondary" onclick="changePassword()">更新密碼</button>
     </div>
 
-    <!-- 學生名單 -->
     <div class="card">
       <div class="section-header">
         <h3>👦 學生名單</h3>
@@ -591,7 +602,6 @@
       </div>
     </div>
 
-    <!-- 每日菜單設定 -->
     <div class="card">
       <div class="section-header">
         <h3>🍱 設定每日菜單與期限</h3>
@@ -627,7 +637,6 @@
       <button class="btn btn-primary" style="margin-top:12px" onclick="saveMenu()">💾 儲存菜單設定</button>
     </div>
 
-    <!-- 危險區 -->
     <div class="card">
       <div class="card-title">危險操作</div>
       <button class="btn btn-danger" id="clear-trigger-btn" onclick="showClearConfirm()">⚠️ 清除全部訂單資料</button>
@@ -642,12 +651,20 @@
 
       <button class="btn btn-secondary" style="margin-top:8px" onclick="importJSON()">📤 匯入備份 JSON</button>
       <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
-      <button class="btn btn-secondary" style="margin-top:8px" onclick="lockAdmin()">🔒 離開後台</button>
     </div>
+
+    <div class="card">
+      <div class="section-header">
+        <h3>📝 系統操作紀錄 (近 50 筆)</h3>
+      </div>
+      <div id="admin-logs-container" class="log-container">
+        </div>
+    </div>
+    
+    <button class="btn btn-secondary" style="margin-top:8px" onclick="lockAdmin()">🔒 離開後台</button>
   </div>
 </div>
 
-<!-- Toast -->
 <div id="toast"></div>
 
 <script>
@@ -659,6 +676,7 @@ const API_KEY = '$2a$10$Je0WLLw7Zqcc8dMCjFo7GudCxbRqOitvn06.kROEsTwlMSXu/XqqW';
 const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
 let _cache = null;
+const STATUS_LABEL = { unpaid: '待付款', paid: '已付款', canceled: '取消' };
 
 function showLoading(msg = '載入中…') {
   let el = document.getElementById('loading-overlay');
@@ -683,22 +701,79 @@ async function getData() {
     _cache = json.record;
   } catch (e) {
     showToast('❌ 無法連線');
-    _cache = { password: 'admin1234', students: [], menus: {}, orders: {}, deadlines: {}, opens: {}, payments: {} };
+    _cache = { password: 'admin1234', students: [], menus: {}, orders: {}, deadlines: {}, opens: {}, payments: {}, logs: [] };
   }
   if (!_cache.deadlines) _cache.deadlines = {};
   if (!_cache.opens) _cache.opens = {};
   if (!_cache.payments) _cache.payments = {};
+  if (!_cache.logs) _cache.logs = [];
   hideLoading();
   return _cache;
 }
 
-async function saveData(d) {
-  _cache = d;
-  showLoading('儲存中…');
+// 寫入操作紀錄的輔助函數
+function getLogTimeStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function pushLog(latestData, user, action) {
+  if (!latestData.logs) latestData.logs = [];
+  latestData.logs.unshift({ time: getLogTimeStr(), user, action });
+  if (latestData.logs.length > 50) latestData.logs.pop(); // 最多保留50筆
+}
+
+async function mutateData(modifierCallback) {
+  showLoading('同步最新資料並儲存中…');
   try {
-    await fetch(BIN_URL, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY }, body: JSON.stringify(d) });
-  } catch (e) { showToast('❌ 儲存失敗'); }
+    const res = await fetch(BIN_URL + '/latest', { headers: { 'X-Master-Key': API_KEY } });
+    if (!res.ok) throw new Error('Fetch failed');
+    const json = await res.json();
+    let latestData = json.record;
+
+    if (!latestData.deadlines) latestData.deadlines = {};
+    if (!latestData.opens) latestData.opens = {};
+    if (!latestData.payments) latestData.payments = {};
+    if (!latestData.orders) latestData.orders = {};
+    if (!latestData.menus) latestData.menus = {};
+    if (!latestData.students) latestData.students = [];
+    if (!latestData.logs) latestData.logs = [];
+
+    modifierCallback(latestData);
+
+    const putRes = await fetch(BIN_URL, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': API_KEY,
+        'X-Bin-Versioning': 'true'
+      },
+      body: JSON.stringify(latestData)
+    });
+
+    if (!putRes.ok) throw new Error('Save failed');
+    _cache = latestData; 
+  } catch (e) {
+    showToast('❌ 儲存失敗，請重試或檢查網路');
+    console.error(e);
+    hideLoading();
+    return false;
+  }
   hideLoading();
+  return true;
+}
+
+async function autoBackup(actionName) {
+  showToast(`正在下載${actionName}前備份...`);
+  try {
+    const res = await fetch(BIN_URL + '/latest', { headers: { 'X-Master-Key': API_KEY } });
+    const json = await res.json();
+    downloadFile(`福林64_${actionName}前自動備份_${getPreciseTimeStr()}.json`, JSON.stringify(json.record, null, 2), 'application/json');
+  } catch (e) {
+    console.error("備份失敗", e);
+    showToast('❌ 自動備份失敗，請確認網路連線');
+    throw e;
+  }
 }
 
 // ════════════════════════════════════════
@@ -720,12 +795,22 @@ async function renderDateGrid() {
   const data = await getData();
   const grid = document.getElementById('date-grid');
   grid.innerHTML = '';
-  const dates = Object.keys(data.menus || {}).sort();
+  
+  const menuDates = Object.keys(data.menus || {});
+  const orderDates = Object.keys(data.orders || {});
+  const allDatesSet = new Set([...menuDates, ...orderDates]);
+  const dates = Array.from(allDatesSet).sort();
+
   const weekDays = ['日','一','二','三','四','五','六'];
   const now = new Date();
   const today = todayStr();
+  
   dates.forEach(key => {
-    if (!data.menus[key] || data.menus[key].length === 0) return;
+    const hasOrders = data.orders && data.orders[key] && Object.keys(data.orders[key]).length > 0;
+    const hasMenu = data.menus[key] && data.menus[key].length > 0;
+
+    if (!hasMenu && !hasOrders) return;
+
     const [y, m, d] = key.split('-');
     const dateObj = new Date(key + 'T00:00:00');
     const deadlineStr = (data.deadlines || {})[key];
@@ -741,8 +826,16 @@ async function renderDateGrid() {
     if (isPastDate) cls += ' past';
     else if (isDeadlineExpired) cls += ' expired';
     else if (isNotYetOpen) cls += ' notopen';
+    if (!hasMenu && hasOrders) cls += ' warning'; 
+
     btn.className = cls;
-    btn.textContent = `${parseInt(m)}/${parseInt(d)}(${weekDays[dateObj.getDay()]})` + (isPastDate ? ' 🔒' : isNotYetOpen ? ' 🕒' : '');
+    let labelText = `${parseInt(m)}/${parseInt(d)}(${weekDays[dateObj.getDay()]})`;
+    if (!hasMenu && hasOrders) labelText += ' ⚠️'; 
+    if (isPastDate) labelText += ' 🔒';
+    else if (isNotYetOpen) labelText += ' 🕒';
+    
+    btn.textContent = labelText;
+    
     if (isLocked) {
       btn.disabled = true;
     } else {
@@ -795,6 +888,11 @@ async function renderMenuItems() {
   const container = document.getElementById('menu-items');
   const actionsContainer = document.getElementById('order-actions');
   container.innerHTML = '';
+  
+  if (menu.length === 0) {
+    container.innerHTML = '<div style="color:var(--red); font-size:0.9rem; padding:10px 0;">⚠️ 此日期的菜單已被清空，但仍保留過往的訂購紀錄。</div>';
+  }
+
   const deadlineStr = (data.deadlines || {})[state.selectedDate];
   const openStr = (data.opens || {})[state.selectedDate];
   const now = new Date();
@@ -824,8 +922,10 @@ async function renderMenuItems() {
     actionsContainer.innerHTML = `<div style="text-align:center;color:var(--accent);font-weight:bold;padding:10px;">🕒 尚未開放訂購，將於 ${openLabel} 開放。</div>`;
   } else if (isPastDeadline && !state.adminUnlocked) {
     actionsContainer.innerHTML = '<div style="text-align:center;color:var(--red);font-weight:bold;padding:10px;">⏳ 已過期，無法修改。</div>';
+  } else if (menu.length > 0) {
+    actionsContainer.innerHTML = `<button class="btn btn-primary" onclick="saveOrder()">✅ 儲存訂單</button><button class="btn btn-danger" onclick="clearOrder()">🗑 清除此筆訂單</button>`;
   } else {
-    actionsContainer.innerHTML = `<button class="btn btn-primary" onclick="saveOrder()">✅ 儲存訂單</button><button class="btn btn-danger" onclick="clearOrder()">🗑 清除訂單</button>`;
+      actionsContainer.innerHTML = '';
   }
   actionsContainer.style.display = 'block';
 }
@@ -837,15 +937,23 @@ function changeQty(name, delta) {
 }
 
 async function saveOrder() {
-  const data = await getData();
-  const menuItems = data.menus[state.selectedDate] || [];
-  const order = menuItems.filter(i => (state.currentOrder[i.name] || 0) > 0).map(i => ({ name: i.name, price: i.price, qty: state.currentOrder[i.name] }));
-  if (!data.orders[state.selectedDate]) data.orders[state.selectedDate] = {};
-  if (order.length === 0) delete data.orders[state.selectedDate][state.selectedStudent];
-  else data.orders[state.selectedDate][state.selectedStudent] = order;
-  await saveData(data);
-  await renderStudentGrid();
-  showToast('✅ 訂單已儲存');
+  const menuItems = _cache.menus[state.selectedDate] || [];
+  const order = menuItems.filter(i => (state.currentOrder[i.name] || 0) > 0)
+                         .map(i => ({ name: i.name, price: i.price, qty: state.currentOrder[i.name] }));
+  
+  const success = await mutateData((latest) => {
+    if (!latest.orders[state.selectedDate]) latest.orders[state.selectedDate] = {};
+    if (order.length === 0) {
+      delete latest.orders[state.selectedDate][state.selectedStudent];
+    } else {
+      latest.orders[state.selectedDate][state.selectedStudent] = order;
+    }
+  });
+
+  if (success) {
+    await renderStudentGrid();
+    showToast('✅ 訂單已儲存');
+  }
 }
 
 function clearOrder() { state.currentOrder = {}; renderMenuItems(); showToast('已清除，請按儲存確認。'); }
@@ -853,8 +961,6 @@ function clearOrder() { state.currentOrder = {}; renderMenuItems(); showToast('�
 // ════════════════════════════════════════
 //  小工具
 // ════════════════════════════════════════
-const STATUS_LABEL = { unpaid: '待付款', paid: '已付款', canceled: '取消' };
-
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 }
@@ -877,6 +983,12 @@ function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
+
+function getPreciseTimeStr() {
+  const d = new Date();
+  return `${todayStr()}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
 function csvCell(v) {
   const s = String(v);
   if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
@@ -1058,7 +1170,7 @@ function renderBillingStats(data, container) {
   names.forEach(name => {
     const bill = studentBill[name];
     html += `<div class="card"><div style="font-weight:900">${escapeHtml(name)} - 待付款合計 NT$${bill.unpaidTotal}</div>`;
-    html += `<div style="font-size:0.78rem;color:var(--text-muted);margin:2px 0 10px;">已付款 NT$${bill.paidTotal}　已取消 NT$${bill.canceledTotal}</div>`;
+    html += `<div style="font-size:0.78rem;color:var(--text-muted);margin:2px 0 10px;">已付款 NT$${bill.paidTotal} 已取消 NT$${bill.canceledTotal}</div>`;
     html += `<table class="stats-table"><thead><tr><th>日期</th><th>品項</th><th>小計</th><th>狀態</th></tr></thead><tbody>`;
     bill.days.forEach(day => {
       const pStatus = day.status;
@@ -1082,13 +1194,18 @@ function renderBillingStats(data, container) {
 
 async function updatePayment(date, student, status) {
   if (!state.adminUnlocked) { showToast('❌ 沒有權限變更狀態'); return; }
-  const data = await getData();
-  if (!data.payments) data.payments = {};
-  if (!data.payments[date]) data.payments[date] = {};
-  data.payments[date][student] = status;
-  await saveData(data);
-  showToast('✅ 狀態已更新');
-  renderStats();
+  
+  const success = await mutateData((latest) => {
+    if (!latest.payments[date]) latest.payments[date] = {};
+    latest.payments[date][student] = status;
+    pushLog(latest, '管理員', `修改付款狀態 (${student} 於 ${date} 改為 ${STATUS_LABEL[status] || status})`);
+  });
+
+  if (success) {
+    showToast('✅ 狀態已更新');
+    renderStats();
+    renderLogsPanel(await getData());
+  }
 }
 
 function showToast(msg) {
@@ -1119,12 +1236,12 @@ async function exportCSV() {
     });
   });
   const csv = '\uFEFF' + rows.map(r => r.map(csvCell).join(',')).join('\n');
-  downloadFile(`福林64訂購明細_${todayStr()}.csv`, csv, 'text/csv;charset=utf-8;');
+  downloadFile(`福林64訂購明細_${getPreciseTimeStr()}.csv`, csv, 'text/csv;charset=utf-8;');
 }
 
 async function exportJSON() {
   const data = await getData();
-  downloadFile(`福林64備份_${todayStr()}.json`, JSON.stringify(data, null, 2), 'application/json');
+  downloadFile(`福林64備份_${getPreciseTimeStr()}.json`, JSON.stringify(data, null, 2), 'application/json');
 }
 
 function importJSON() {
@@ -1142,18 +1259,35 @@ async function handleImport(event) {
       event.target.value = '';
       return;
     }
-    if (!confirm('此操作將覆蓋目前所有資料（學生名單、菜單、訂單、付款狀態），確定要匯入嗎？')) {
+    if (!confirm('此操作將覆蓋目前所有資料（學生名單、菜單、訂單、付款狀態），確定要匯入嗎？\n\n系統會先為您自動下載一份覆蓋前備份。')) {
       event.target.value = '';
       return;
     }
-    if (!parsed.deadlines) parsed.deadlines = {};
-    if (!parsed.opens) parsed.opens = {};
-    if (!parsed.payments) parsed.payments = {};
-    if (!parsed.password) parsed.password = _cache.password;
-    await saveData(parsed);
-    showToast('✅ 匯入成功');
-    await renderDateGrid();
-    await renderAdminPage();
+    
+    await autoBackup('匯入');
+
+    const success = await mutateData((latest) => {
+        const preservePassword = latest.password;
+        // 保留目前的操作紀錄陣列
+        const preserveLogs = latest.logs || []; 
+        Object.keys(latest).forEach(k => delete latest[k]); 
+        Object.assign(latest, parsed); 
+        
+        if (!latest.deadlines) latest.deadlines = {};
+        if (!latest.opens) latest.opens = {};
+        if (!latest.payments) latest.payments = {};
+        if (!latest.password) latest.password = preservePassword;
+        
+        // 恢復紀錄陣列，並加上此次匯入動作
+        latest.logs = preserveLogs;
+        pushLog(latest, '管理員', `匯入資料備份檔`);
+    });
+
+    if (success) {
+        showToast('✅ 匯入成功');
+        await renderDateGrid();
+        await renderAdminPage();
+    }
   } catch (e) {
     showToast('❌ 匯入失敗，請確認檔案格式');
   }
@@ -1184,17 +1318,25 @@ function checkClearConfirmInput() {
 async function clearAllData() {
   const val = document.getElementById('clear-confirm-input').value.trim();
   if (val !== CLEAR_CONFIRM_PHRASE) { showToast('❌ 請先輸入正確的確認文字'); return; }
-  const data = await getData();
-  data.orders = {};
-  data.payments = {};
-  await saveData(data);
-  hideClearConfirm();
-  showToast('✅ 已清除全部訂單資料');
-  await renderDateGrid();
+  
+  await autoBackup('清除');
+
+  const success = await mutateData((latest) => {
+    latest.orders = {};
+    latest.payments = {};
+    pushLog(latest, '管理員', `清除所有訂單與付款資料`);
+  });
+
+  if (success) {
+    hideClearConfirm();
+    showToast('✅ 已清除全部訂單資料');
+    await renderDateGrid();
+    renderLogsPanel(await getData());
+  }
 }
 
 // ════════════════════════════════════════
-//  後台管理：密碼 / 學生名單 / 菜單與截止時間
+//  後台管理：密碼 / 學生名單 / 菜單與截止時間 / 紀錄
 // ════════════════════════════════════════
 function unlockAdmin() {
   const pw = document.getElementById('admin-pw-input').value;
@@ -1219,11 +1361,17 @@ function lockAdmin() {
 async function changePassword() {
   const val = document.getElementById('new-pw').value;
   if (!val || val.length < 4) { showToast('❌ 密碼至少需要 4 個字元'); return; }
-  const data = await getData();
-  data.password = val;
-  await saveData(data);
-  document.getElementById('new-pw').value = '';
-  showToast('✅ 密碼已更新');
+  
+  const success = await mutateData((latest) => {
+    latest.password = val;
+    pushLog(latest, '管理員', `修改系統密碼`);
+  });
+
+  if (success) {
+    document.getElementById('new-pw').value = '';
+    showToast('✅ 密碼已更新');
+    renderLogsPanel(await getData());
+  }
 }
 
 async function renderAdminPage() {
@@ -1237,6 +1385,7 @@ async function renderAdminPage() {
   document.getElementById('admin-unlocked').style.display = 'block';
 
   renderStudentListEdit(data);
+  renderLogsPanel(data);
 
   const adminDateInput = document.getElementById('admin-date');
   if (!adminDateInput.value) {
@@ -1246,6 +1395,22 @@ async function renderAdminPage() {
   }
   adminDateInput.onchange = () => loadAdminMenuEditor(data);
   await loadAdminMenuEditor(data);
+}
+
+// 渲染操作紀錄面板
+function renderLogsPanel(data) {
+  const container = document.getElementById('admin-logs-container');
+  if (!data.logs || data.logs.length === 0) {
+    container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:10px;">目前尚無操作紀錄</div>';
+    return;
+  }
+  container.innerHTML = data.logs.map(log => `
+    <div class="log-item">
+      <span class="log-time">${escapeHtml(log.time)}</span>
+      <span class="log-user">[${escapeHtml(log.user)}]</span>
+      <span class="log-action">${escapeHtml(log.action)}</span>
+    </div>
+  `).join('');
 }
 
 function renderStudentListEdit(data) {
@@ -1267,23 +1432,42 @@ async function addStudent() {
   const name = input.value.trim();
   if (!name) return;
   if (/\s/.test(name)) { showToast('❌ 姓名不能包含空白'); return; }
-  const data = await getData();
-  if (!data.students) data.students = [];
-  if (data.students.includes(name)) { showToast('❌ 已存在這個名字'); return; }
-  data.students.push(name);
-  await saveData(data);
-  input.value = '';
-  renderStudentListEdit(data);
-  showToast('✅ 已新增學生');
+  
+  let isDuplicate = false;
+  
+  const success = await mutateData((latest) => {
+    if (latest.students.includes(name)) {
+      isDuplicate = true;
+    } else {
+      latest.students.push(name);
+      pushLog(latest, '管理員', `新增學生 (${name})`);
+    }
+  });
+
+  if (isDuplicate) { showToast('❌ 已存在這個名字'); return; }
+  if (success) {
+    input.value = '';
+    const updatedData = await getData();
+    renderStudentListEdit(updatedData);
+    renderLogsPanel(updatedData);
+    showToast('✅ 已新增學生');
+  }
 }
 
 async function removeStudent(name) {
   if (!confirm(`確定要將「${name}」從名單移除嗎？過去的訂單紀錄仍會保留在統計中。`)) return;
-  const data = await getData();
-  data.students = (data.students || []).filter(s => s !== name);
-  await saveData(data);
-  renderStudentListEdit(data);
-  showToast('✅ 已移除學生');
+  
+  const success = await mutateData((latest) => {
+    latest.students = latest.students.filter(s => s !== name);
+    pushLog(latest, '管理員', `移除學生 (${name})`);
+  });
+
+  if (success) {
+    const updatedData = await getData();
+    renderStudentListEdit(updatedData);
+    renderLogsPanel(updatedData);
+    showToast('✅ 已移除學生');
+  }
 }
 
 let adminMenuDraft = [];
@@ -1348,22 +1532,30 @@ async function saveMenu() {
   const dateKey = document.getElementById('admin-date').value;
   if (!dateKey) { showToast('❌ 請先選擇日期'); return; }
   const cleaned = adminMenuDraft.filter(it => it.name && it.name.trim()).map(it => ({ name: it.name.trim(), price: parseInt(it.price) || 0 }));
-  const data = await getData();
-  if (!data.menus) data.menus = {};
-  data.menus[dateKey] = cleaned;
-  if (!data.deadlines) data.deadlines = {};
   const deadlineVal = buildDateHourValue('admin-deadline-date', 'admin-deadline-hour');
-  if (deadlineVal) data.deadlines[dateKey] = deadlineVal;
-  else delete data.deadlines[dateKey];
-
-  if (!data.opens) data.opens = {};
   const openVal = buildDateHourValue('admin-open-date', 'admin-open-hour');
-  if (openVal) data.opens[dateKey] = openVal;
-  else delete data.opens[dateKey];
 
-  await saveData(data);
-  showToast('✅ 菜單已儲存');
-  await renderDateGrid();
+  const success = await mutateData((latest) => {
+    // 判斷是新增還是修改
+    const isNew = !latest.menus[dateKey] || latest.menus[dateKey].length === 0;
+    
+    latest.menus[dateKey] = cleaned;
+    
+    if (deadlineVal) latest.deadlines[dateKey] = deadlineVal;
+    else delete latest.deadlines[dateKey];
+
+    if (openVal) latest.opens[dateKey] = openVal;
+    else delete latest.opens[dateKey];
+
+    const actionText = isNew ? `新增日期與設定菜單 (${dateKey})` : `修改菜單/期限設定 (${dateKey})`;
+    pushLog(latest, '管理員', actionText);
+  });
+
+  if (success) {
+    showToast('✅ 菜單已儲存');
+    await renderDateGrid();
+    renderLogsPanel(await getData());
+  }
 }
 
 renderDateGrid();
